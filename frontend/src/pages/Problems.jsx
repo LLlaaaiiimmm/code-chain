@@ -35,9 +35,11 @@ const Problems = ({ user, token, onLogout }) => {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [difficulty, setDifficulty] = useState(searchParams.get("difficulty") || "all");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
+  const [solvedProblems, setSolvedProblems] = useState(new Set());
 
   useEffect(() => {
     fetchProblems();
+    fetchSolvedProblems();
   }, [difficulty, category]);
 
   const fetchProblems = async () => {
@@ -55,6 +57,26 @@ const Problems = ({ user, token, onLogout }) => {
       console.error("Error fetching problems:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSolvedProblems = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/submissions`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        }
+      );
+      const solved = new Set(
+        response.data
+          .filter(sub => sub.status === "passed")
+          .map(sub => sub.problem_id)
+      );
+      setSolvedProblems(solved);
+    } catch (error) {
+      console.error("Error fetching solved problems:", error);
     }
   };
 
