@@ -811,9 +811,12 @@ contract FlashArbitrage {
         }
     ]
     
+    # Combine demo and comprehensive problems
+    all_problems = problems  # Use comprehensive set from seed_problems.py
+    
     # Clear and insert
     await db.problems.delete_many({})
-    await db.problems.insert_many(problems)
+    await db.problems.insert_many(all_problems)
     
     # Seed hackathons
     hackathons = [
