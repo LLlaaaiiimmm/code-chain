@@ -2043,6 +2043,115 @@ async def get_next_problem_recommendation(user: dict = Depends(get_current_user)
         "target_difficulty": target_difficulty
     }
 
+@api_router.get("/insights/personal")
+async def get_personal_insights(user: dict = Depends(get_current_user)):
+    """Get personalized insights and suggestions"""
+    user_id = user["user_id"]
+    elo = user.get("elo_rating", 1200)
+    problems_solved = user.get("problems_solved", 0)
+    
+    # Get streak info
+    current_streak = await calculate_daily_streak(user_id)
+    
+    # Get recent activity (last 7 days)
+    week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).date().isoformat()
+    recent_submissions = await db.submissions.find({
+        "user_id": user_id,
+        "status": "passed",
+        "created_at": {"$gte": week_ago}
+    }).to_list(None)
+    
+    # Get user's weakest areas
+    user_skills = await db.user_skills.find({"user_id": user_id}).to_list(None)
+    skill_progress = {skill["skill_id"]: skill.get("progress", 0) for skill in user_skills}
+    
+    weakest_skills = sorted(skill_progress.items(), key=lambda x: x[1])[:3] if skill_progress else []
+    strongest_skills = sorted(skill_progress.items(), key=lambda x: x[1], reverse=True)[:3] if skill_progress else []
+    
+    # Calculate velocity (problems per week)
+    velocity = len(recent_submissions)
+    
+    # Get rank and percentile
+    rank = await db.users.count_documents({"elo_rating": {"$gt": elo}}) + 1
+    total_users = await db.users.count_documents({})
+    percentile = 100 - (rank / max(total_users, 1) * 100)
+    
+    # Generate insights
+    insights = []
+    
+    # Streak insight
+    if current_streak >= 7:
+        insights.append({
+            "type": "positive",
+            "icon": "🔥",
+            "title": "Amazing Consistency!",
+            "message": f"You're on a {current_streak}-day streak. Keep the momentum going!"
+        })
+    elif current_streak == 0:
+        insights.append({
+            "type": "reminder",
+            "icon": "⏰",
+            "title": "Time to Practice",
+            "message": "Solve a problem today to start your streak!"
+        })
+    
+    # Velocity insight
+    if velocity >= 10:
+        insights.append({
+            "type": "positive",
+            "icon": "⚡",
+            "title": "High Velocity!",
+            "message": f"You've solved {velocity} problems this week. Outstanding work!"
+        })
+    elif velocity == 0:
+        insights.append({
+            "type": "reminder",
+            "icon": "📚",
+            "title": "Let's Get Started",
+            "message": "You haven't solved any problems this week. Start now to build momentum!"
+        })
+    
+    # ELO progression insight
+    if elo >= 1500:
+        insights.append({
+            "type": "positive",
+            "icon": "🏆",
+            "title": "Expert Level",
+            "message": f"You're in the top {100 - percentile:.1f}% of all users!"
+        })
+    
+    # Skill development insight
+    if weakest_skills:
+        skill_name = weakest_skills[0][0].replace("_", " ").title()
+        insights.append({
+            "type": "suggestion",
+            "icon": "🎯",
+            "title": "Growth Opportunity",
+            "message": f"Focus on {skill_name} to become more well-rounded."
+        })
+    
+    # Next milestone
+    next_elo_milestone = ((elo // 100) + 1) * 100
+    elo_to_milestone = next_elo_milestone - elo
+    if elo_to_milestone <= 50:
+        insights.append({
+            "type": "motivation",
+            "icon": "🎖️",
+            "title": "Milestone Ahead",
+            "message": f"Just {elo_to_milestone} ELO away from reaching {next_elo_milestone}!"
+        })
+    
+    return {
+        "insights": insights,
+        "stats": {
+            "current_streak": current_streak,
+            "weekly_velocity": velocity,
+            "percentile": round(percentile, 1),
+            "weakest_skills": [{"skill_id": s[0], "progress": s[1]} for s in weakest_skills],
+            "strongest_skills": [{"skill_id": s[0], "progress": s[1]} for s in strongest_skills]
+        }
+    }
+
 # ============== MAIN ==============
 
 app.include_router(api_router)
