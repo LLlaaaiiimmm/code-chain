@@ -197,13 +197,27 @@ const ProblemSolver = ({ user, token, onLogout }) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4 }}
               >
-                <h1 className="font-secondary text-2xl font-bold mb-4">{problem?.title}</h1>
+                <h1 className="font-secondary text-2xl font-bold mb-4 flex items-center gap-3">
+                  {problem?.title}
+                  {isSolved && (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Solved
+                    </Badge>
+                  )}
+                </h1>
                 
                 <div className="flex items-center gap-4 mb-6 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <CheckCircle className="w-4 h-4 text-green-400" />
                     {problem?.solved_count || 0} solved
                   </span>
+                  {isSolved && solvedSubmission && (
+                    <span className="flex items-center gap-1 text-green-400">
+                      <Zap className="w-4 h-4" />
+                      You earned +{solvedSubmission.elo_change} ELO
+                    </span>
+                  )}
                 </div>
 
                 <div className="prose prose-invert prose-sm max-w-none mb-6">
