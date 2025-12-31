@@ -844,6 +844,204 @@ contract FlashArbitrage {
     
     return {"message": "Seeded successfully", "problems": len(problems), "hackathons": len(hackathons)}
 
+# ============== SUBSCRIPTIONS ENDPOINTS ==============
+
+@api_router.get("/subscriptions/plans")
+async def get_subscription_plans():
+    """Get available subscription plans"""
+    plans = [
+        {
+            "id": "basic",
+            "name": "Basic",
+            "price": 0,
+            "features": [
+                "10 задач в месяц",
+                "Базовый рейтинг",
+                "Доступ к сообществу",
+                "Просмотр лидерборда"
+            ],
+            "limits": {
+                "problems_per_month": 10,
+                "hackathons": False,
+                "certificates": False
+            }
+        },
+        {
+            "id": "pro",
+            "name": "Pro",
+            "price": 29,
+            "features": [
+                "Неограниченные задачи",
+                "Продвинутая аналитика",
+                "Участие в хакатонах",
+                "Приоритетная поддержка",
+                "Детальная статистика по газу",
+                "Сравнение с топ-разработчиками"
+            ],
+            "limits": {
+                "problems_per_month": -1,  # unlimited
+                "hackathons": True,
+                "certificates": False
+            }
+        },
+        {
+            "id": "expert",
+            "name": "Expert",
+            "price": 99,
+            "features": [
+                "Всё из Pro +",
+                "NFT сертификация",
+                "Менторинг от экспертов",
+                "Приватные соревнования",
+                "Доступ к эксклюзивным задачам",
+                "Прямой доступ к компаниям-партнёрам",
+                "Персональные рекомендации"
+            ],
+            "limits": {
+                "problems_per_month": -1,
+                "hackathons": True,
+                "certificates": True,
+                "mentoring": True,
+                "private_competitions": True
+            }
+        }
+    ]
+    return plans
+
+@api_router.post("/subscriptions/upgrade")
+async def upgrade_subscription(plan_id: str, user: dict = Depends(get_current_user)):
+    """Upgrade user subscription"""
+    valid_plans = ["basic", "pro", "expert"]
+    if plan_id not in valid_plans:
+        raise HTTPException(status_code=400, detail="Invalid plan")
+    
+    # In production, integrate with payment gateway (Stripe, etc.)
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"subscription": plan_id, "subscription_updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    updated_user = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    return updated_user
+
+@api_router.get("/subscriptions/current")
+async def get_current_subscription(user: dict = Depends(get_current_user)):
+    """Get current subscription info"""
+    subscription = user.get("subscription", "basic")
+    
+    # Calculate usage this month
+    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    submissions_this_month = await db.submissions.count_documents({
+        "user_id": user["user_id"],
+        "created_at": {"$gte": start_of_month.isoformat()}
+    })
+    
+    return {
+        "plan": subscription,
+        "problems_solved_this_month": submissions_this_month
+    }
+
+# ============== CERTIFICATES (NFT) ENDPOINTS ==============
+
+class CertificateRequest(BaseModel):
+    certificate_type: str  # "problem_master", "hackathon_winner", "expert_rating"
+    metadata: dict = {}
+
+@api_router.post("/certificates/mint")
+async def mint_certificate(cert_request: CertificateRequest, user: dict = Depends(get_current_user)):
+    """Mint NFT certificate on Polygon blockchain"""
+    
+    # Check if user has Expert subscription
+    if user.get("subscription") != "expert":
+        raise HTTPException(status_code=403, detail="Expert subscription required for NFT certificates")
+    
+    # Validate certificate type and criteria
+    certificate_types = {
+        "problem_master": {"min_problems": 50, "min_rating": 1500},
+        "hackathon_winner": {"requires": "hackathon_win"},
+        "expert_rating": {"min_rating": 2000},
+        "security_expert": {"category": "security", "min_problems": 20},
+        "gas_optimizer": {"category": "optimization", "min_problems": 15}
+    }
+    
+    cert_type = cert_request.certificate_type
+    if cert_type not in certificate_types:
+        raise HTTPException(status_code=400, detail="Invalid certificate type")
+    
+    criteria = certificate_types[cert_type]
+    
+    # Verify user meets criteria
+    if "min_problems" in criteria:
+        if user.get("problems_solved", 0) < criteria["min_problems"]:
+            raise HTTPException(status_code=400, detail=f"Need at least {criteria['min_problems']} solved problems")
+    
+    if "min_rating" in criteria:
+        if user.get("elo_rating", 1200) < criteria["min_rating"]:
+            raise HTTPException(status_code=400, detail=f"Need at least {criteria['min_rating']} ELO rating")
+    
+    # Generate certificate metadata
+    certificate_id = f"cert_{uuid.uuid4().hex[:12]}"
+    certificate_doc = {
+        "certificate_id": certificate_id,
+        "user_id": user["user_id"],
+        "type": cert_type,
+        "name": user.get("name"),
+        "metadata": {
+            "problems_solved": user.get("problems_solved", 0),
+            "elo_rating": user.get("elo_rating", 1200),
+            "issue_date": datetime.now(timezone.utc).isoformat(),
+            **cert_request.metadata
+        },
+        # In production, this would be actual blockchain transaction
+        "blockchain": "polygon",
+        "contract_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",  # Example
+        "token_id": int(uuid.uuid4().hex[:8], 16),  # Simulated token ID
+        "transaction_hash": f"0x{uuid.uuid4().hex}",  # Simulated tx hash
+        "status": "minted",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.certificates.insert_one(certificate_doc)
+    certificate_doc.pop("_id", None)
+    
+    # Update user achievements
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$push": {"achievements": cert_type}}
+    )
+    
+    return certificate_doc
+
+@api_router.get("/certificates")
+async def get_user_certificates(user: dict = Depends(get_current_user)):
+    """Get all certificates for current user"""
+    certificates = await db.certificates.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).to_list(100)
+    return certificates
+
+@api_router.get("/certificates/{certificate_id}")
+async def get_certificate(certificate_id: str):
+    """Get specific certificate (public)"""
+    certificate = await db.certificates.find_one({"certificate_id": certificate_id}, {"_id": 0})
+    if not certificate:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    return certificate
+
+@api_router.get("/certificates/verify/{token_id}")
+async def verify_certificate(token_id: int):
+    """Verify certificate authenticity by token ID"""
+    certificate = await db.certificates.find_one({"token_id": token_id}, {"_id": 0})
+    if not certificate:
+        return {"valid": False, "message": "Certificate not found"}
+    
+    return {
+        "valid": True,
+        "certificate": certificate,
+        "message": "Certificate is authentic"
+    }
+
 # ============== MAIN ==============
 
 app.include_router(api_router)
