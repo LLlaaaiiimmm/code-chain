@@ -292,17 +292,28 @@ const ProblemSolver = ({ user, token, onLogout }) => {
                 <div className="flex items-center gap-2">
                   <Code2 className="w-4 h-4 text-primary" />
                   <span className="text-sm font-mono">{problem?.category}.sol</span>
+                  {isSolved && (
+                    <Badge variant="outline" className="text-green-400 border-green-400/30 ml-2">
+                      Already Solved
+                    </Badge>
+                  )}
                 </div>
                 <Button
                   onClick={handleSubmit}
-                  disabled={submitting}
+                  disabled={submitting || isSolved}
                   className="glow-primary"
                   data-testid="submit-btn"
+                  title={isSolved ? "You have already solved this problem" : "Submit your solution"}
                 >
                   {submitting ? (
                     <>
                       <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
                       Running...
+                    </>
+                  ) : isSolved ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Solved
                     </>
                   ) : (
                     <>
