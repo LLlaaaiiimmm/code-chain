@@ -9,7 +9,7 @@ import { Badge } from "../components/ui/badge";
 import { 
   Boxes, Code2, Trophy, TrendingUp, Target, 
   ChevronRight, Clock, CheckCircle, XCircle,
-  LogOut, User, Settings, Flame, Award
+  LogOut, User, Settings, Flame, Award, BarChart3
 } from "lucide-react";
 import {
   DropdownMenu,
