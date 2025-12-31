@@ -77,6 +77,8 @@ const Dashboard = ({ user, token, onLogout }) => {
                 <Link to="/dashboard" className="text-foreground font-medium">Dashboard</Link>
                 <Link to="/problems" className="text-muted-foreground hover:text-foreground transition-colors">Problems</Link>
                 <Link to="/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors">Leaderboard</Link>
+                <Link to="/achievements" className="text-muted-foreground hover:text-foreground transition-colors">Achievements</Link>
+                <Link to="/analytics" className="text-muted-foreground hover:text-foreground transition-colors">Analytics</Link>
                 <Link to="/hackathons" className="text-muted-foreground hover:text-foreground transition-colors">Hackathons</Link>
               </div>
             </div>
