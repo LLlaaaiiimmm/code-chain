@@ -36,9 +36,12 @@ const ProblemSolver = ({ user, token, onLogout }) => {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [showHints, setShowHints] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
+  const [solvedSubmission, setSolvedSubmission] = useState(null);
 
   useEffect(() => {
     fetchProblem();
+    checkProblemStatus();
   }, [problemId]);
 
   const fetchProblem = async () => {
@@ -54,7 +57,36 @@ const ProblemSolver = ({ user, token, onLogout }) => {
     }
   };
 
+  const checkProblemStatus = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/problems/${problemId}/status`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        }
+      );
+      setIsSolved(response.data.is_solved);
+      setSolvedSubmission(response.data.submission);
+    } catch (error) {
+      console.error("Failed to check problem status:", error);
+    }
+  };
+
   const handleSubmit = async () => {
+    // Validate code is not empty
+    const codeStripped = code.trim();
+    if (!codeStripped || codeStripped.length < 10) {
+      toast.error("Please write a meaningful solution (minimum 10 characters)");
+      return;
+    }
+
+    // Check if problem is already solved
+    if (isSolved) {
+      toast.error("You have already solved this problem. Each problem can only be solved once.");
+      return;
+    }
+
     setSubmitting(true);
     setResult(null);
 
@@ -76,11 +108,14 @@ const ProblemSolver = ({ user, token, onLogout }) => {
       
       if (response.data.status === "passed") {
         toast.success(`All tests passed! +${response.data.elo_change} ELO`);
+        setIsSolved(true);
+        setSolvedSubmission(response.data);
       } else {
         toast.error("Some tests failed. Check the results below.");
       }
     } catch (error) {
-      toast.error("Submission failed");
+      const errorMsg = error.response?.data?.detail || "Submission failed";
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
