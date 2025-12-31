@@ -137,11 +137,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "CRUD operations for problems, filtering by difficulty/category, 18+ problems seeded"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Problems API working correctly. Retrieved 18 problems successfully. GET /api/problems endpoint functional."
 
   - task: "Submissions and Code Checking"
     implemented: true
