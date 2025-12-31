@@ -1,0 +1,63 @@
+[
+  {
+    "test": "User Registration",
+    "success": false,
+    "message": "Registration failed: 422",
+    "details": {
+      "response": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"email\"],\"msg\":\"value is not a valid email address: The part after the @-sign is a special-use or reserved name that cannot be used with email.\",\"input\":\"testuser_54693834@codechain.test\",\"ctx\":{\"reason\":\"The part after the @-sign is a special-use or reserved name that cannot be used with email.\"}}]}"
+    },
+    "timestamp": "2025-12-31T13:33:44.495769"
+  },
+  {
+    "test": "Expert User Creation",
+    "success": false,
+    "message": "Expert registration failed: 422",
+    "details": {},
+    "timestamp": "2025-12-31T13:33:44.510069"
+  },
+  {
+    "test": "Get Problems",
+    "success": true,
+    "message": "Retrieved 18 problems",
+    "details": {
+      "total_problems": 18,
+      "test_problem_id": "sol_001"
+    },
+    "timestamp": "2025-12-31T13:33:44.536356"
+  },
+  {
+    "test": "Authentication Endpoints",
+    "success": false,
+    "message": "Missing test user token",
+    "details": {},
+    "timestamp": "2025-12-31T13:33:44.536435"
+  },
+  {
+    "test": "Empty Code Validation",
+    "success": false,
+    "message": "Missing test user token or problem ID",
+    "details": {},
+    "timestamp": "2025-12-31T13:33:44.536453"
+  },
+  {
+    "test": "One-Time Solve Logic",
+    "success": false,
+    "message": "Missing test user token or problem ID",
+    "details": {},
+    "timestamp": "2025-12-31T13:33:44.536467"
+  },
+  {
+    "test": "Problem Status Check",
+    "success": false,
+    "message": "Missing test user token or problem ID",
+    "details": {},
+    "timestamp": "2025-12-31T13:33:44.536480"
+  },
+  {
+    "test": "Certificate Minting Auth",
+    "success": false,
+    "message": "Missing expert user token",
+    "details": {},
+    "timestamp": "2025-12-31T13:33:44.536496"
+  }
+]
