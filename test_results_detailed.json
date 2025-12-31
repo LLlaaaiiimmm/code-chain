@@ -1,19 +1,24 @@
 [
   {
     "test": "User Registration",
-    "success": false,
-    "message": "Registration failed: 422",
+    "success": true,
+    "message": "Successfully registered test user",
     "details": {
-      "response": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"email\"],\"msg\":\"value is not a valid email address: The part after the @-sign is a special-use or reserved name that cannot be used with email.\",\"input\":\"testuser_54693834@codechain.test\",\"ctx\":{\"reason\":\"The part after the @-sign is a special-use or reserved name that cannot be used with email.\"}}]}"
+      "user_id": "user_0becf2e89afb",
+      "email": "testuser_73962e59@example.com"
     },
-    "timestamp": "2025-12-31T13:33:44.495769"
+    "timestamp": "2025-12-31T13:34:01.727437"
   },
   {
     "test": "Expert User Creation",
-    "success": false,
-    "message": "Expert registration failed: 422",
-    "details": {},
-    "timestamp": "2025-12-31T13:33:44.510069"
+    "success": true,
+    "message": "Successfully created expert user",
+    "details": {
+      "user_id": "user_de3990baf2f1",
+      "email": "expert_fb7c3000@example.com",
+      "subscription": "expert"
+    },
+    "timestamp": "2025-12-31T13:34:02.126139"
   },
   {
     "test": "Get Problems",
@@ -23,41 +28,121 @@
       "total_problems": 18,
       "test_problem_id": "sol_001"
     },
-    "timestamp": "2025-12-31T13:33:44.536356"
+    "timestamp": "2025-12-31T13:34:02.145186"
   },
   {
     "test": "Authentication Endpoints",
-    "success": false,
-    "message": "Missing test user token",
-    "details": {},
-    "timestamp": "2025-12-31T13:33:44.536435"
+    "success": true,
+    "message": "Authentication working correctly",
+    "details": {
+      "user_id": "user_0becf2e89afb",
+      "email": "testuser_73962e59@example.com",
+      "elo_rating": 1200
+    },
+    "timestamp": "2025-12-31T13:34:02.201712"
   },
   {
-    "test": "Empty Code Validation",
-    "success": false,
-    "message": "Missing test user token or problem ID",
-    "details": {},
-    "timestamp": "2025-12-31T13:33:44.536453"
+    "test": "Empty Code Validation - Empty",
+    "success": true,
+    "message": "Correctly rejected empty code",
+    "details": {
+      "status_code": 400,
+      "error_message": "Code is too short. Please write a meaningful solution (minimum 10 characters)."
+    },
+    "timestamp": "2025-12-31T13:34:02.220209"
   },
   {
-    "test": "One-Time Solve Logic",
-    "success": false,
-    "message": "Missing test user token or problem ID",
-    "details": {},
-    "timestamp": "2025-12-31T13:33:44.536467"
+    "test": "Empty Code Validation - Short",
+    "success": true,
+    "message": "Correctly rejected short code",
+    "details": {
+      "status_code": 400,
+      "error_message": "Code is too short. Please write a meaningful solution (minimum 10 characters).",
+      "code_length": 5
+    },
+    "timestamp": "2025-12-31T13:34:02.275712"
   },
   {
-    "test": "Problem Status Check",
-    "success": false,
-    "message": "Missing test user token or problem ID",
-    "details": {},
-    "timestamp": "2025-12-31T13:33:44.536480"
+    "test": "One-Time Solve Logic - First Submit",
+    "success": true,
+    "message": "First submission successful",
+    "details": {
+      "submission_id": "sub_eec0f873",
+      "status": "passed",
+      "elo_change": 10
+    },
+    "timestamp": "2025-12-31T13:34:02.338430"
   },
   {
-    "test": "Certificate Minting Auth",
-    "success": false,
-    "message": "Missing expert user token",
-    "details": {},
-    "timestamp": "2025-12-31T13:33:44.536496"
+    "test": "One-Time Solve Logic - Stats Update",
+    "success": true,
+    "message": "User stats correctly updated",
+    "details": {
+      "elo_before": 1200,
+      "elo_after": 1210,
+      "problems_solved_before": 0,
+      "problems_solved_after": 1
+    },
+    "timestamp": "2025-12-31T13:34:02.351007"
+  },
+  {
+    "test": "One-Time Solve Logic - Second Submit",
+    "success": true,
+    "message": "Correctly rejected second submission",
+    "details": {
+      "status_code": 400,
+      "error_message": "You have already solved this problem. Each problem can only be solved once."
+    },
+    "timestamp": "2025-12-31T13:34:02.368296"
+  },
+  {
+    "test": "One-Time Solve Logic - No Double Count",
+    "success": true,
+    "message": "Stats correctly unchanged on second submission",
+    "details": {
+      "elo_remained": 1210,
+      "problems_solved_remained": 1
+    },
+    "timestamp": "2025-12-31T13:34:02.419857"
+  },
+  {
+    "test": "Problem Status Check - Solved",
+    "success": true,
+    "message": "Correctly shows problem as solved",
+    "details": {
+      "problem_id": "sol_001",
+      "is_solved": true,
+      "submission_id": "sub_eec0f873"
+    },
+    "timestamp": "2025-12-31T13:34:02.434470"
+  },
+  {
+    "test": "Problem Status Check - Unsolved",
+    "success": true,
+    "message": "Correctly shows problem as unsolved",
+    "details": {
+      "problem_id": "sol_002",
+      "is_solved": false
+    },
+    "timestamp": "2025-12-31T13:34:02.470590"
+  },
+  {
+    "test": "Certificate Minting Auth - Expert",
+    "success": true,
+    "message": "Expert user needs higher rating (expected)",
+    "details": {
+      "error": "Need at least 2000 ELO rating"
+    },
+    "timestamp": "2025-12-31T13:34:02.485506"
+  },
+  {
+    "test": "Certificate Minting Auth - Basic",
+    "success": true,
+    "message": "Basic user correctly denied",
+    "details": {
+      "status_code": 403,
+      "error_message": "Expert subscription required for NFT certificates"
+    },
+    "timestamp": "2025-12-31T13:34:02.498039"
   }
 ]
