@@ -263,6 +263,9 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Problem browsing with filters (difficulty, category), search functionality"
+      - working: "NA"
+        agent: "main"
+        comment: "UPDATED: Added solved problems tracking. Shows 'Solved' badge on problem cards that user has already completed."
 
   - task: "Problem Solver / Code Editor"
     implemented: true
