@@ -442,6 +442,22 @@ async def create_submission(submission: SubmissionCreate, user: dict = Depends(g
     
     return submission_doc
 
+@api_router.get("/problems/{problem_id}/status")
+async def get_problem_status(problem_id: str, user: dict = Depends(get_current_user)):
+    """Check if user has solved this problem"""
+    solved_submission = await db.submissions.find_one({
+        "user_id": user["user_id"],
+        "problem_id": problem_id,
+        "status": "passed"
+    }, {"_id": 0})
+    
+    return {
+        "problem_id": problem_id,
+        "is_solved": solved_submission is not None,
+        "submission": solved_submission
+    }
+
+
 @api_router.get("/submissions")
 async def get_user_submissions(user: dict = Depends(get_current_user), limit: int = 20):
     submissions = await db.submissions.find(
