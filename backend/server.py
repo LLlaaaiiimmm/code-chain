@@ -952,6 +952,15 @@ async def create_submission(submission: SubmissionCreate, user: dict = Depends(g
             {"problem_id": submission.problem_id},
             {"$inc": {"solved_count": 1}}
         )
+        
+        # Update skills progress
+        await update_skill_progress(user["user_id"], submission.problem_id)
+        
+        # Check and unlock achievements
+        await check_and_unlock_achievements(user["user_id"])
+        
+        # Record daily activity
+        await record_daily_activity(user["user_id"], problems_solved=1, elo_gained=elo_change)
     
     submission_doc = {
         "submission_id": submission_id,
