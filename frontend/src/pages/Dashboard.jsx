@@ -87,18 +87,21 @@ const Dashboard = ({ user, token, onLogout }) => {
               </div>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu-btn">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={user?.picture} />
-                    <AvatarFallback className="bg-primary/20 text-primary">
-                      {user?.name?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden md:inline">{user?.name}</span>
-                </Button>
-              </DropdownMenuTrigger>
+            <div className="flex items-center gap-2">
+              <NotificationCenter token={token} />
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu-btn">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user?.picture} />
+                      <AvatarFallback className="bg-primary/20 text-primary">
+                        {user?.name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline">{user?.name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium">{user?.name}</p>
