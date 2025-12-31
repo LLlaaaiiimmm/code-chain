@@ -80,7 +80,7 @@ class CodeChainTester:
         try:
             # Generate unique expert user
             unique_id = uuid.uuid4().hex[:8]
-            expert_email = f"expert_{unique_id}@codechain.test"
+            expert_email = f"expert_{unique_id}@example.com"
             
             response = await self.client.post(f"{API_BASE}/auth/register", json={
                 "email": expert_email,
