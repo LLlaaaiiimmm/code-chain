@@ -1168,6 +1168,28 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
     rank = await db.users.count_documents({"elo_rating": {"$gt": user.get("elo_rating", 0)}}) + 1
     total_users = await db.users.count_documents({})
     
+    # Get current rank info
+    current_rank = await get_user_rank(user["user_id"])
+    
+    # Daily streak
+    daily_streak = await calculate_daily_streak(user["user_id"])
+    
+    # Recent achievements (last 3)
+    recent_achievements = await db.user_achievements.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).sort("unlocked_at", -1).limit(3).to_list(3)
+    
+    # Get achievement details
+    recent_achievements_full = []
+    for ach in recent_achievements:
+        ach_details = next((a for a in ACHIEVEMENTS_LIST if a["achievement_id"] == ach["achievement_id"]), None)
+        if ach_details:
+            recent_achievements_full.append({
+                **ach_details,
+                "unlocked_at": ach["unlocked_at"]
+            })
+    
     return {
         "total_submissions": total_submissions,
         "passed_submissions": passed_submissions,
@@ -1177,7 +1199,10 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         "rank": rank,
         "total_users": total_users,
         "recent_submissions": recent_submissions,
-        "problems_by_difficulty": problems_by_difficulty
+        "problems_by_difficulty": problems_by_difficulty,
+        "current_rank": current_rank,
+        "daily_streak": daily_streak,
+        "recent_achievements": recent_achievements_full
     }
 
 @api_router.get("/stats/global")
