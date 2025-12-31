@@ -19,6 +19,10 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { DailyChallenges } from "../components/DailyChallenges";
+import { PersonalInsights } from "../components/PersonalInsights";
+import { RecommendedProblems } from "../components/RecommendedProblems";
+import { NotificationCenter } from "../components/NotificationCenter";
 import { API } from "../App";
 
 const Dashboard = ({ user, token, onLogout }) => {
