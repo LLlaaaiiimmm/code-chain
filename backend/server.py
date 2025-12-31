@@ -123,6 +123,56 @@ class LeaderboardEntry(BaseModel):
     problems_solved: int
     picture: Optional[str] = None
 
+
+class SkillNode(BaseModel):
+    skill_id: str
+    name: str
+    description: str
+    category: str  # solidity, rust, move, tvm, general
+    dependencies: List[str] = []  # skill_ids that must be completed first
+    required_problems: List[str] = []  # problem_ids that unlock this skill
+    level: int = 1  # 1-5 proficiency level
+
+class UserSkillProgress(BaseModel):
+    user_id: str
+    skill_id: str
+    progress: int  # 0-100
+    level: int  # 1-5
+    unlocked: bool
+    unlocked_at: Optional[datetime] = None
+
+class Achievement(BaseModel):
+    achievement_id: str
+    name: str
+    description: str
+    category: str  # progress, technical, efficiency, streak
+    icon: str  # emoji or icon name
+    criteria: dict  # conditions to unlock
+    points: int  # bonus points
+    rarity: str  # common, rare, epic, legendary
+
+class UserAchievement(BaseModel):
+    user_id: str
+    achievement_id: str
+    unlocked_at: datetime
+    progress: Optional[int] = None  # for progressive achievements
+
+class Rank(BaseModel):
+    rank_id: str
+    name: str
+    min_elo: int
+    min_problems: int
+    required_skills: List[str] = []
+    icon: str
+    color: str
+
+class ActivityDay(BaseModel):
+    user_id: str
+    date: str  # YYYY-MM-DD
+    problems_solved: int
+    submissions_count: int
+    elo_gained: int
+
 # ============== AUTH HELPERS ==============
 
 def hash_password(password: str) -> str:
