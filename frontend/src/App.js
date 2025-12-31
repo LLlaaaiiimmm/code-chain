@@ -14,6 +14,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Hackathons from "./pages/Hackathons";
 import Pricing from "./pages/Pricing";
+import Certificates from "./pages/Certificates";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
