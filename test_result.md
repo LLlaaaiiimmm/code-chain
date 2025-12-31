@@ -152,7 +152,7 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
@@ -160,6 +160,9 @@ backend:
       - working: true
         agent: "main"
         comment: "FIXED: Added validation for empty code (minimum 10 characters). Added check to prevent solving same problem twice. Added /api/problems/{problem_id}/status endpoint to check if problem is solved."
+      - working: true
+        agent: "testing"
+        comment: "✅ CRITICAL FIXES VERIFIED: 1) Empty code validation working - rejects code <10 chars with proper error message. 2) One-time solve logic working - prevents solving same problem twice, correctly updates ELO only once. 3) Problem status endpoint working - shows is_solved: true/false correctly. All critical fixes are functional."
 
   - task: "Leaderboard System"
     implemented: true
