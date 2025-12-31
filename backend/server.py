@@ -623,7 +623,13 @@ async def get_global_stats():
 @api_router.post("/seed")
 async def seed_data():
     """Seed initial problems for demo"""
-    problems = [
+    from seed_problems import get_problems
+    
+    # Get comprehensive problem set
+    problems = get_problems()
+    
+    # Also add some basic demo problems
+    demo_problems = [
         {
             "problem_id": "prob_001",
             "title": "Hello Blockchain",
