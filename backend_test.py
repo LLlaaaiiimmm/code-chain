@@ -48,7 +48,7 @@ class CodeChainTester:
         try:
             # Generate unique test user
             unique_id = uuid.uuid4().hex[:8]
-            test_email = f"testuser_{unique_id}@codechain.test"
+            test_email = f"testuser_{unique_id}@example.com"
             
             response = await self.client.post(f"{API_BASE}/auth/register", json={
                 "email": test_email,
