@@ -231,6 +231,486 @@ async def get_optional_user(request: Request) -> Optional[dict]:
     except HTTPException:
         return None
 
+
+# ============== SKILLS & ACHIEVEMENTS HELPERS ==============
+
+# Predefined skill tree
+SKILL_TREE = [
+    {
+        "skill_id": "sol_basics",
+        "name": "Solidity Basics",
+        "description": "Understanding of Solidity syntax, variables, and functions",
+        "category": "solidity",
+        "dependencies": [],
+        "level": 1
+    },
+    {
+        "skill_id": "sol_storage",
+        "name": "Storage & State",
+        "description": "Working with storage, state variables, and mappings",
+        "category": "solidity",
+        "dependencies": ["sol_basics"],
+        "level": 2
+    },
+    {
+        "skill_id": "sol_security",
+        "name": "Smart Contract Security",
+        "description": "Security patterns, reentrancy, access control",
+        "category": "solidity",
+        "dependencies": ["sol_basics", "sol_storage"],
+        "level": 3
+    },
+    {
+        "skill_id": "sol_gas",
+        "name": "Gas Optimization",
+        "description": "Optimizing contracts for lower gas costs",
+        "category": "solidity",
+        "dependencies": ["sol_storage"],
+        "level": 3
+    },
+    {
+        "skill_id": "sol_advanced",
+        "name": "Advanced Patterns",
+        "description": "Proxies, upgradeable contracts, advanced patterns",
+        "category": "solidity",
+        "dependencies": ["sol_security", "sol_gas"],
+        "level": 4
+    },
+    {
+        "skill_id": "erc20",
+        "name": "ERC-20 Tokens",
+        "description": "Creating and managing ERC-20 tokens",
+        "category": "solidity",
+        "dependencies": ["sol_basics"],
+        "level": 2
+    },
+    {
+        "skill_id": "erc721",
+        "name": "NFTs (ERC-721)",
+        "description": "NFT standards and implementation",
+        "category": "solidity",
+        "dependencies": ["erc20"],
+        "level": 3
+    },
+    {
+        "skill_id": "defi",
+        "name": "DeFi Protocols",
+        "description": "AMM, lending, staking protocols",
+        "category": "solidity",
+        "dependencies": ["erc20", "sol_security"],
+        "level": 4
+    },
+    {
+        "skill_id": "rust_basics",
+        "name": "Rust Basics",
+        "description": "Rust syntax, ownership, borrowing",
+        "category": "rust",
+        "dependencies": [],
+        "level": 1
+    },
+    {
+        "skill_id": "solana_prog",
+        "name": "Solana Programs",
+        "description": "Building programs on Solana",
+        "category": "rust",
+        "dependencies": ["rust_basics"],
+        "level": 3
+    },
+    {
+        "skill_id": "func_basics",
+        "name": "FunC Basics",
+        "description": "TON smart contracts with FunC",
+        "category": "tvm",
+        "dependencies": [],
+        "level": 2
+    },
+    {
+        "skill_id": "crypto_basics",
+        "name": "Cryptography Fundamentals",
+        "description": "Hashing, signatures, encryption",
+        "category": "general",
+        "dependencies": [],
+        "level": 2
+    }
+]
+
+# Predefined achievements
+ACHIEVEMENTS_LIST = [
+    {
+        "achievement_id": "first_solve",
+        "name": "First Steps",
+        "description": "Solve your first problem",
+        "category": "progress",
+        "icon": "🎯",
+        "criteria": {"problems_solved": 1},
+        "points": 10,
+        "rarity": "common"
+    },
+    {
+        "achievement_id": "solve_10",
+        "name": "Problem Solver",
+        "description": "Solve 10 problems",
+        "category": "progress",
+        "icon": "⚡",
+        "criteria": {"problems_solved": 10},
+        "points": 50,
+        "rarity": "common"
+    },
+    {
+        "achievement_id": "solve_50",
+        "name": "Coding Warrior",
+        "description": "Solve 50 problems",
+        "category": "progress",
+        "icon": "🔥",
+        "criteria": {"problems_solved": 50},
+        "points": 200,
+        "rarity": "rare"
+    },
+    {
+        "achievement_id": "solve_100",
+        "name": "Century Club",
+        "description": "Solve 100 problems",
+        "category": "progress",
+        "icon": "💯",
+        "criteria": {"problems_solved": 100},
+        "points": 500,
+        "rarity": "epic"
+    },
+    {
+        "achievement_id": "expert_solver",
+        "name": "Expert Problem Solver",
+        "description": "Solve an expert-level problem",
+        "category": "technical",
+        "icon": "🏆",
+        "criteria": {"expert_problems": 1},
+        "points": 100,
+        "rarity": "rare"
+    },
+    {
+        "achievement_id": "sol_master",
+        "name": "Solidity Master",
+        "description": "Solve 20 Solidity problems",
+        "category": "technical",
+        "icon": "💎",
+        "criteria": {"solidity_problems": 20},
+        "points": 150,
+        "rarity": "rare"
+    },
+    {
+        "achievement_id": "rust_expert",
+        "name": "Rust Expert",
+        "description": "Solve 10 Rust/Solana problems",
+        "category": "technical",
+        "icon": "🦀",
+        "criteria": {"rust_problems": 10},
+        "points": 150,
+        "rarity": "rare"
+    },
+    {
+        "achievement_id": "gas_optimizer",
+        "name": "Gas Optimizer",
+        "description": "Submit 5 solutions with excellent gas efficiency",
+        "category": "efficiency",
+        "icon": "⚙️",
+        "criteria": {"efficient_solutions": 5},
+        "points": 100,
+        "rarity": "rare"
+    },
+    {
+        "achievement_id": "first_try",
+        "name": "First Try Success",
+        "description": "Solve a problem on the first attempt",
+        "category": "efficiency",
+        "icon": "🎪",
+        "criteria": {"first_try_solve": 1},
+        "points": 50,
+        "rarity": "common"
+    },
+    {
+        "achievement_id": "week_streak",
+        "name": "Week Warrior",
+        "description": "Solve at least 1 problem for 7 consecutive days",
+        "category": "streak",
+        "icon": "📅",
+        "criteria": {"daily_streak": 7},
+        "points": 150,
+        "rarity": "rare"
+    },
+    {
+        "achievement_id": "month_streak",
+        "name": "Consistency King",
+        "description": "Solve at least 1 problem for 30 consecutive days",
+        "category": "streak",
+        "icon": "👑",
+        "criteria": {"daily_streak": 30},
+        "points": 500,
+        "rarity": "legendary"
+    },
+    {
+        "achievement_id": "speed_demon",
+        "name": "Speed Demon",
+        "description": "Solve 10 problems in a single day",
+        "category": "efficiency",
+        "icon": "⚡",
+        "criteria": {"problems_in_day": 10},
+        "points": 200,
+        "rarity": "epic"
+    },
+    {
+        "achievement_id": "top_10",
+        "name": "Top 10 Elite",
+        "description": "Reach top 10 in global leaderboard",
+        "category": "progress",
+        "icon": "🌟",
+        "criteria": {"leaderboard_rank": 10},
+        "points": 500,
+        "rarity": "legendary"
+    }
+]
+
+# Rank system
+RANKS = [
+    {"rank_id": "newbie", "name": "Newbie", "min_elo": 0, "min_problems": 0, "icon": "🌱", "color": "#94a3b8"},
+    {"rank_id": "junior", "name": "Junior Developer", "min_elo": 1200, "min_problems": 5, "icon": "👨‍💻", "color": "#22c55e"},
+    {"rank_id": "middle", "name": "Middle Developer", "min_elo": 1400, "min_problems": 20, "icon": "⚡", "color": "#eab308"},
+    {"rank_id": "senior", "name": "Senior Developer", "min_elo": 1600, "min_problems": 50, "icon": "🔥", "color": "#f97316"},
+    {"rank_id": "expert", "name": "Expert", "min_elo": 1800, "min_problems": 100, "icon": "💎", "color": "#a855f7"},
+    {"rank_id": "architect", "name": "Blockchain Architect", "min_elo": 2000, "min_problems": 200, "icon": "👑", "color": "#fbbf24"}
+]
+
+async def check_and_unlock_achievements(user_id: str):
+    """Check if user has unlocked any new achievements"""
+    user = await db.users.find_one({"user_id": user_id})
+    if not user:
+        return []
+    
+    # Get user stats
+    total_solved = user.get("problems_solved", 0)
+    user_achievements = user.get("achievements", [])
+    
+    # Get detailed stats
+    submissions = await db.submissions.find({"user_id": user_id, "status": "passed"}).to_list(None)
+    
+    # Count by category
+    solidity_count = len([s for s in submissions if await get_problem_category(s["problem_id"]) == "solidity"])
+    rust_count = len([s for s in submissions if await get_problem_category(s["problem_id"]) == "rust"])
+    
+    # Count by difficulty
+    expert_count = len([s for s in submissions if await get_problem_difficulty(s["problem_id"]) == "expert"])
+    
+    # Calculate streak
+    daily_streak = await calculate_daily_streak(user_id)
+    
+    # Check problems solved today
+    today = datetime.now(timezone.utc).date().isoformat()
+    problems_today = await db.submissions.count_documents({
+        "user_id": user_id,
+        "status": "passed",
+        "created_at": {"$regex": f"^{today}"}
+    })
+    
+    # Get leaderboard rank
+    rank = await db.users.count_documents({"elo_rating": {"$gt": user.get("elo_rating", 0)}}) + 1
+    
+    # Build user stats for criteria checking
+    user_stats = {
+        "problems_solved": total_solved,
+        "solidity_problems": solidity_count,
+        "rust_problems": rust_count,
+        "expert_problems": expert_count,
+        "daily_streak": daily_streak,
+        "problems_in_day": problems_today,
+        "leaderboard_rank": rank
+    }
+    
+    newly_unlocked = []
+    
+    for achievement in ACHIEVEMENTS_LIST:
+        achievement_id = achievement["achievement_id"]
+        
+        # Skip if already unlocked
+        if achievement_id in user_achievements:
+            continue
+        
+        # Check criteria
+        criteria_met = True
+        for key, required_value in achievement["criteria"].items():
+            if key == "leaderboard_rank":
+                if user_stats.get(key, 999999) > required_value:
+                    criteria_met = False
+                    break
+            else:
+                if user_stats.get(key, 0) < required_value:
+                    criteria_met = False
+                    break
+        
+        if criteria_met:
+            # Unlock achievement
+            await db.users.update_one(
+                {"user_id": user_id},
+                {"$push": {"achievements": achievement_id}}
+            )
+            
+            # Record unlock
+            await db.user_achievements.insert_one({
+                "user_id": user_id,
+                "achievement_id": achievement_id,
+                "unlocked_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            newly_unlocked.append(achievement)
+    
+    return newly_unlocked
+
+async def get_problem_category(problem_id: str) -> str:
+    """Get category of a problem"""
+    problem = await db.problems.find_one({"problem_id": problem_id})
+    return problem.get("category", "") if problem else ""
+
+async def get_problem_difficulty(problem_id: str) -> str:
+    """Get difficulty of a problem"""
+    problem = await db.problems.find_one({"problem_id": problem_id})
+    return problem.get("difficulty", "") if problem else ""
+
+async def calculate_daily_streak(user_id: str) -> int:
+    """Calculate current daily streak"""
+    # Get all submission dates
+    submissions = await db.submissions.find(
+        {"user_id": user_id, "status": "passed"},
+        {"created_at": 1}
+    ).sort("created_at", -1).to_list(None)
+    
+    if not submissions:
+        return 0
+    
+    # Extract unique dates
+    dates = []
+    for sub in submissions:
+        created_at = sub["created_at"]
+        if isinstance(created_at, str):
+            date_str = created_at.split("T")[0]
+        else:
+            date_str = created_at.date().isoformat()
+        if date_str not in dates:
+            dates.append(date_str)
+    
+    if not dates:
+        return 0
+    
+    # Check streak from today backwards
+    today = datetime.now(timezone.utc).date()
+    streak = 0
+    
+    for i in range(len(dates)):
+        expected_date = (today - timedelta(days=i)).isoformat()
+        if expected_date in dates:
+            streak += 1
+        else:
+            break
+    
+    return streak
+
+async def update_skill_progress(user_id: str, problem_id: str):
+    """Update user's skill progress based on solved problem"""
+    problem = await db.problems.find_one({"problem_id": problem_id})
+    if not problem:
+        return
+    
+    # Map problem tags to skills
+    problem_tags = problem.get("tags", [])
+    category = problem.get("category", "")
+    
+    # Determine which skills this problem contributes to
+    skill_mapping = {
+        "basics": "sol_basics",
+        "storage": "sol_storage",
+        "security": "sol_security",
+        "gas": "sol_gas",
+        "erc20": "erc20",
+        "nft": "erc721",
+        "defi": "defi",
+        "rust": "rust_basics",
+        "solana": "solana_prog",
+        "func": "func_basics",
+        "crypto": "crypto_basics"
+    }
+    
+    skills_to_update = []
+    for tag in problem_tags:
+        if tag in skill_mapping:
+            skills_to_update.append(skill_mapping[tag])
+    
+    # Category-based skills
+    if category == "solidity":
+        skills_to_update.append("sol_basics")
+    elif category == "rust":
+        skills_to_update.append("rust_basics")
+    elif category == "tvm":
+        skills_to_update.append("func_basics")
+    
+    # Update progress
+    for skill_id in skills_to_update:
+        existing = await db.user_skills.find_one({"user_id": user_id, "skill_id": skill_id})
+        if existing:
+            new_progress = min(100, existing.get("progress", 0) + 10)
+            await db.user_skills.update_one(
+                {"user_id": user_id, "skill_id": skill_id},
+                {"$set": {"progress": new_progress}}
+            )
+        else:
+            await db.user_skills.insert_one({
+                "user_id": user_id,
+                "skill_id": skill_id,
+                "progress": 10,
+                "level": 1,
+                "unlocked": True,
+                "unlocked_at": datetime.now(timezone.utc).isoformat()
+            })
+
+async def get_user_rank(user_id: str) -> dict:
+    """Get user's current rank"""
+    user = await db.users.find_one({"user_id": user_id})
+    if not user:
+        return RANKS[0]
+    
+    elo = user.get("elo_rating", 0)
+    problems = user.get("problems_solved", 0)
+    
+    # Find highest rank user qualifies for
+    current_rank = RANKS[0]
+    for rank in RANKS:
+        if elo >= rank["min_elo"] and problems >= rank["min_problems"]:
+            current_rank = rank
+        else:
+            break
+    
+    return current_rank
+
+async def record_daily_activity(user_id: str, problems_solved: int = 0, elo_gained: int = 0):
+    """Record user's daily activity"""
+    today = datetime.now(timezone.utc).date().isoformat()
+    
+    existing = await db.daily_activity.find_one({"user_id": user_id, "date": today})
+    if existing:
+        await db.daily_activity.update_one(
+            {"user_id": user_id, "date": today},
+            {
+                "$inc": {
+                    "problems_solved": problems_solved,
+                    "submissions_count": 1,
+                    "elo_gained": elo_gained
+                }
+            }
+        )
+    else:
+        await db.daily_activity.insert_one({
+            "user_id": user_id,
+            "date": today,
+            "problems_solved": problems_solved,
+            "submissions_count": 1,
+            "elo_gained": elo_gained
+        })
+
 # ============== AUTH ENDPOINTS ==============
 
 @api_router.post("/auth/register")
