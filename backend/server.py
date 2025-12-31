@@ -355,6 +355,27 @@ async def create_submission(submission: SubmissionCreate, user: dict = Depends(g
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
     
+    # Validate code is not empty and has minimum content
+    code_stripped = submission.code.strip()
+    if not code_stripped or len(code_stripped) < 10:
+        raise HTTPException(
+            status_code=400, 
+            detail="Code is too short. Please write a meaningful solution (minimum 10 characters)."
+        )
+    
+    # Check if user has already solved this problem successfully
+    existing_solved = await db.submissions.find_one({
+        "user_id": user["user_id"],
+        "problem_id": submission.problem_id,
+        "status": "passed"
+    })
+    
+    if existing_solved:
+        raise HTTPException(
+            status_code=400, 
+            detail="You have already solved this problem. Each problem can only be solved once."
+        )
+    
     submission_id = f"sub_{uuid.uuid4().hex[:8]}"
     
     # Simulate Solidity compilation and test execution
