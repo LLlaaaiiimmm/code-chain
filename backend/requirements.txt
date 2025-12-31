@@ -72,5 +72,5 @@ urllib3==2.6.2
 uvicorn==0.25.0
 watchfiles==1.1.1
 web3==7.6.0
-eth-account==0.14.0
+eth-account==0.13.7
 solcx==2.0.1
