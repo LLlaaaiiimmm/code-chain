@@ -215,11 +215,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Certificate minting for Expert users, blockchain integration (simulated for MVP), verification endpoints"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Certificate minting authentication working correctly. Expert users can access minting (requires sufficient ELO rating). Basic users correctly denied with 403 Forbidden. Authentication system properly enforced."
 
   - task: "Comprehensive Problem Library"
     implemented: true
