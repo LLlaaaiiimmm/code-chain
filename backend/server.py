@@ -1627,6 +1627,397 @@ async def verify_certificate(token_id: int):
         "message": "Certificate is authentic"
     }
 
+
+# ============== SKILLS ENDPOINTS ==============
+
+@api_router.get("/skills/tree")
+async def get_skill_tree():
+    """Get complete skill tree structure"""
+    return {"skills": SKILL_TREE}
+
+@api_router.get("/skills/user-progress")
+async def get_user_skill_progress(user: dict = Depends(get_current_user)):
+    """Get user's progress across all skills"""
+    user_skills = await db.user_skills.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+    
+    # Build complete skill progress including locked skills
+    skill_progress = []
+    for skill in SKILL_TREE:
+        user_skill = next((s for s in user_skills if s["skill_id"] == skill["skill_id"]), None)
+        
+        if user_skill:
+            skill_progress.append({
+                **skill,
+                "progress": user_skill.get("progress", 0),
+                "unlocked": user_skill.get("unlocked", False),
+                "unlocked_at": user_skill.get("unlocked_at")
+            })
+        else:
+            skill_progress.append({
+                **skill,
+                "progress": 0,
+                "unlocked": False,
+                "unlocked_at": None
+            })
+    
+    return {"skills": skill_progress}
+
+# ============== ACHIEVEMENTS ENDPOINTS ==============
+
+@api_router.get("/achievements")
+async def get_all_achievements():
+    """Get list of all available achievements"""
+    return {"achievements": ACHIEVEMENTS_LIST}
+
+@api_router.get("/achievements/user")
+async def get_user_achievements(user: dict = Depends(get_current_user)):
+    """Get user's unlocked achievements"""
+    user_achievements = user.get("achievements", [])
+    
+    # Get full achievement details
+    unlocked = []
+    locked = []
+    
+    for achievement in ACHIEVEMENTS_LIST:
+        achievement_id = achievement["achievement_id"]
+        if achievement_id in user_achievements:
+            # Get unlock timestamp
+            unlock_record = await db.user_achievements.find_one({
+                "user_id": user["user_id"],
+                "achievement_id": achievement_id
+            })
+            unlocked.append({
+                **achievement,
+                "unlocked": True,
+                "unlocked_at": unlock_record.get("unlocked_at") if unlock_record else None
+            })
+        else:
+            # Calculate progress for this achievement
+            progress = await calculate_achievement_progress(user["user_id"], achievement)
+            locked.append({
+                **achievement,
+                "unlocked": False,
+                "progress": progress
+            })
+    
+    return {
+        "unlocked": unlocked,
+        "locked": locked,
+        "total": len(ACHIEVEMENTS_LIST),
+        "unlocked_count": len(unlocked)
+    }
+
+async def calculate_achievement_progress(user_id: str, achievement: dict) -> dict:
+    """Calculate progress towards an achievement"""
+    user = await db.users.find_one({"user_id": user_id})
+    if not user:
+        return {"current": 0, "required": 0, "percentage": 0}
+    
+    criteria = achievement["criteria"]
+    
+    # Get user stats
+    total_solved = user.get("problems_solved", 0)
+    submissions = await db.submissions.find({"user_id": user_id, "status": "passed"}).to_list(None)
+    
+    solidity_count = len([s for s in submissions if await get_problem_category(s["problem_id"]) == "solidity"])
+    rust_count = len([s for s in submissions if await get_problem_category(s["problem_id"]) == "rust"])
+    expert_count = len([s for s in submissions if await get_problem_difficulty(s["problem_id"]) == "expert"])
+    daily_streak = await calculate_daily_streak(user_id)
+    
+    # Count problems solved today
+    today = datetime.now(timezone.utc).date().isoformat()
+    problems_today = await db.submissions.count_documents({
+        "user_id": user_id,
+        "status": "passed",
+        "created_at": {"$regex": f"^{today}"}
+    })
+    
+    rank = await db.users.count_documents({"elo_rating": {"$gt": user.get("elo_rating", 0)}}) + 1
+    
+    user_stats = {
+        "problems_solved": total_solved,
+        "solidity_problems": solidity_count,
+        "rust_problems": rust_count,
+        "expert_problems": expert_count,
+        "daily_streak": daily_streak,
+        "problems_in_day": problems_today,
+        "leaderboard_rank": rank
+    }
+    
+    # Find the relevant stat and calculate progress
+    for key, required in criteria.items():
+        current = user_stats.get(key, 0)
+        if key == "leaderboard_rank":
+            # For rank, lower is better
+            if current <= required:
+                percentage = 100
+            else:
+                percentage = min(100, int((required / max(current, 1)) * 100))
+        else:
+            percentage = min(100, int((current / required) * 100))
+        
+        return {
+            "current": current,
+            "required": required,
+            "percentage": percentage,
+            "stat_name": key
+        }
+    
+    return {"current": 0, "required": 0, "percentage": 0}
+
+# ============== RANK ENDPOINTS ==============
+
+@api_router.get("/user/rank")
+async def get_current_user_rank(user: dict = Depends(get_current_user)):
+    """Get user's current rank and progress to next rank"""
+    current_rank = await get_user_rank(user["user_id"])
+    
+    # Find next rank
+    next_rank = None
+    for i, rank in enumerate(RANKS):
+        if rank["rank_id"] == current_rank["rank_id"] and i < len(RANKS) - 1:
+            next_rank = RANKS[i + 1]
+            break
+    
+    # Calculate progress to next rank
+    progress = None
+    if next_rank:
+        elo = user.get("elo_rating", 0)
+        problems = user.get("problems_solved", 0)
+        
+        elo_progress = min(100, int((elo / next_rank["min_elo"]) * 100))
+        problems_progress = min(100, int((problems / next_rank["min_problems"]) * 100))
+        
+        progress = {
+            "elo": {"current": elo, "required": next_rank["min_elo"], "percentage": elo_progress},
+            "problems": {"current": problems, "required": next_rank["min_problems"], "percentage": problems_progress},
+            "overall": min(elo_progress, problems_progress)
+        }
+    
+    return {
+        "current_rank": current_rank,
+        "next_rank": next_rank,
+        "progress": progress
+    }
+
+@api_router.get("/ranks")
+async def get_all_ranks():
+    """Get all available ranks"""
+    return {"ranks": RANKS}
+
+# ============== ANALYTICS ENDPOINTS ==============
+
+@api_router.get("/stats/activity-calendar")
+async def get_activity_calendar(user: dict = Depends(get_current_user)):
+    """Get daily activity for calendar heatmap (last 365 days)"""
+    # Get activity for last year
+    one_year_ago = (datetime.now(timezone.utc) - timedelta(days=365)).date().isoformat()
+    
+    activities = await db.daily_activity.find(
+        {"user_id": user["user_id"], "date": {"$gte": one_year_ago}},
+        {"_id": 0}
+    ).to_list(365)
+    
+    # Create map of date -> activity
+    activity_map = {act["date"]: act for act in activities}
+    
+    # Fill in all dates (including zeros)
+    calendar_data = []
+    for i in range(365):
+        date = (datetime.now(timezone.utc).date() - timedelta(days=i)).isoformat()
+        if date in activity_map:
+            calendar_data.append(activity_map[date])
+        else:
+            calendar_data.append({
+                "date": date,
+                "problems_solved": 0,
+                "submissions_count": 0,
+                "elo_gained": 0
+            })
+    
+    calendar_data.reverse()  # Oldest first
+    
+    return {"calendar": calendar_data}
+
+@api_router.get("/stats/detailed")
+async def get_detailed_stats(user: dict = Depends(get_current_user)):
+    """Get comprehensive statistics"""
+    submissions = await db.submissions.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(None)
+    passed_submissions = [s for s in submissions if s["status"] == "passed"]
+    
+    # By difficulty
+    by_difficulty = {}
+    for diff in ["junior", "middle", "senior", "expert"]:
+        count = 0
+        for sub in passed_submissions:
+            problem = await db.problems.find_one({"problem_id": sub["problem_id"]})
+            if problem and problem.get("difficulty") == diff:
+                count += 1
+        by_difficulty[diff] = count
+    
+    # By category
+    by_category = {}
+    for cat in ["solidity", "rust", "tvm", "crypto"]:
+        count = 0
+        for sub in passed_submissions:
+            problem = await db.problems.find_one({"problem_id": sub["problem_id"]})
+            if problem and problem.get("category") == cat:
+                count += 1
+        by_category[cat] = count
+    
+    # Success rate
+    total = len(submissions)
+    passed = len(passed_submissions)
+    success_rate = round((passed / total * 100) if total > 0 else 0, 1)
+    
+    # Average gas usage
+    avg_gas = 0
+    if passed_submissions:
+        total_gas = sum(s.get("gas_used", 0) for s in passed_submissions)
+        avg_gas = round(total_gas / len(passed_submissions))
+    
+    # Streak info
+    current_streak = await calculate_daily_streak(user["user_id"])
+    
+    # Time-based stats (last 7 days, 30 days)
+    today = datetime.now(timezone.utc).date()
+    week_ago = (today - timedelta(days=7)).isoformat()
+    month_ago = (today - timedelta(days=30)).isoformat()
+    
+    week_solved = len([s for s in passed_submissions if s.get("created_at", "").split("T")[0] >= week_ago])
+    month_solved = len([s for s in passed_submissions if s.get("created_at", "").split("T")[0] >= month_ago])
+    
+    # ELO progression (last 30 days)
+    elo_history = []
+    for i in range(30, -1, -1):
+        date = (today - timedelta(days=i)).isoformat()
+        # Get ELO at end of that day
+        day_subs = [s for s in passed_submissions if s.get("created_at", "").split("T")[0] <= date]
+        day_elo = 1200 + sum(s.get("elo_change", 0) for s in day_subs)
+        elo_history.append({"date": date, "elo": day_elo})
+    
+    return {
+        "total_submissions": total,
+        "passed_submissions": passed,
+        "success_rate": success_rate,
+        "by_difficulty": by_difficulty,
+        "by_category": by_category,
+        "average_gas": avg_gas,
+        "current_streak": current_streak,
+        "week_solved": week_solved,
+        "month_solved": month_solved,
+        "elo_history": elo_history
+    }
+
+@api_router.get("/stats/compare")
+async def get_comparative_stats(user: dict = Depends(get_current_user)):
+    """Compare user stats with platform averages"""
+    # User stats
+    user_elo = user.get("elo_rating", 1200)
+    user_solved = user.get("problems_solved", 0)
+    
+    # Platform averages
+    all_users = await db.users.find({}, {"elo_rating": 1, "problems_solved": 1}).to_list(None)
+    
+    if all_users:
+        avg_elo = sum(u.get("elo_rating", 1200) for u in all_users) / len(all_users)
+        avg_solved = sum(u.get("problems_solved", 0) for u in all_users) / len(all_users)
+    else:
+        avg_elo = 1200
+        avg_solved = 0
+    
+    # User rank
+    rank = await db.users.count_documents({"elo_rating": {"$gt": user_elo}}) + 1
+    total_users = len(all_users)
+    percentile = 100 - (rank / max(total_users, 1) * 100)
+    
+    return {
+        "user": {
+            "elo": user_elo,
+            "problems_solved": user_solved,
+            "rank": rank,
+            "percentile": round(percentile, 1)
+        },
+        "platform_average": {
+            "elo": round(avg_elo),
+            "problems_solved": round(avg_solved, 1)
+        },
+        "comparison": {
+            "elo_diff": user_elo - avg_elo,
+            "problems_diff": user_solved - avg_solved
+        }
+    }
+
+# ============== RECOMMENDATIONS ENDPOINTS ==============
+
+@api_router.get("/recommendations/next-problem")
+async def get_next_problem_recommendation(user: dict = Depends(get_current_user)):
+    """Get personalized problem recommendation"""
+    elo = user.get("elo_rating", 1200)
+    problems_solved = user.get("problems_solved", 0)
+    
+    # Get user's solved problems
+    solved_submissions = await db.submissions.find({
+        "user_id": user["user_id"],
+        "status": "passed"
+    }, {"problem_id": 1}).to_list(None)
+    solved_ids = [s["problem_id"] for s in solved_submissions]
+    
+    # Get user's skill progress
+    user_skills = await db.user_skills.find({"user_id": user["user_id"]}, {"_id": 0}).to_list(100)
+    
+    # Find weakest skills (areas for improvement)
+    skill_scores = {}
+    for skill in user_skills:
+        skill_scores[skill["skill_id"]] = skill.get("progress", 0)
+    
+    # Determine appropriate difficulty
+    if elo < 1300:
+        target_difficulty = "junior"
+    elif elo < 1500:
+        target_difficulty = "middle"
+    elif elo < 1700:
+        target_difficulty = "senior"
+    else:
+        target_difficulty = "expert"
+    
+    # Find unsolved problems at appropriate difficulty
+    query = {
+        "difficulty": target_difficulty,
+        "problem_id": {"$nin": solved_ids}
+    }
+    
+    # Prioritize problems that help with weak skills
+    weakest_skill = min(skill_scores.items(), key=lambda x: x[1])[0] if skill_scores else None
+    if weakest_skill:
+        # Map skill to category
+        skill_category_map = {
+            "sol_basics": "solidity", "sol_storage": "solidity", "sol_security": "solidity",
+            "sol_gas": "solidity", "erc20": "solidity", "erc721": "solidity", "defi": "solidity",
+            "rust_basics": "rust", "solana_prog": "rust",
+            "func_basics": "tvm", "crypto_basics": "crypto"
+        }
+        category = skill_category_map.get(weakest_skill)
+        if category:
+            query["category"] = category
+    
+    recommended_problems = await db.problems.find(query, {"_id": 0}).limit(5).to_list(5)
+    
+    # If no problems found at strict criteria, relax it
+    if not recommended_problems:
+        query.pop("category", None)
+        recommended_problems = await db.problems.find(query, {"_id": 0}).limit(5).to_list(5)
+    
+    reason = f"Based on your ELO ({elo}), these {target_difficulty}-level problems are perfect for you."
+    if weakest_skill:
+        reason += f" Focusing on improving your {weakest_skill} skill."
+    
+    return {
+        "recommendations": recommended_problems,
+        "reason": reason,
+        "target_difficulty": target_difficulty
+    }
+
 # ============== MAIN ==============
 
 app.include_router(api_router)
