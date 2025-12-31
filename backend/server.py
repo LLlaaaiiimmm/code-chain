@@ -851,7 +851,7 @@ contract FlashArbitrage {
     await db.hackathons.delete_many({})
     await db.hackathons.insert_many(hackathons)
     
-    return {"message": "Seeded successfully", "problems": len(problems), "hackathons": len(hackathons)}
+    return {"message": "Seeded successfully", "problems": len(all_problems), "hackathons": len(hackathons)}
 
 # ============== SUBSCRIPTIONS ENDPOINTS ==============
 
