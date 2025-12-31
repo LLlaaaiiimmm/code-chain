@@ -151,6 +151,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Submission system with simulated code checking, ELO updates, test results"
+      - working: true
+        agent: "main"
+        comment: "FIXED: Added validation for empty code (minimum 10 characters). Added check to prevent solving same problem twice. Added /api/problems/{problem_id}/status endpoint to check if problem is solved."
 
   - task: "Leaderboard System"
     implemented: true
