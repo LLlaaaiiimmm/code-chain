@@ -275,6 +275,9 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Monaco code editor, split view with problem description, submission with test results"
+      - working: "NA"
+        agent: "main"
+        comment: "UPDATED: Added client-side validation for empty code. Added check for problem status on load. Shows 'Solved' badge if problem already solved. Disables submit button for solved problems. Shows ELO earned in problem header."
 
   - task: "Leaderboard UI"
     implemented: true
