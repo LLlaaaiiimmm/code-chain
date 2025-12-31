@@ -248,6 +248,12 @@ const Problems = ({ user, token, onLogout }) => {
                               <Badge className={`border ${getCategoryBadge(problem.category)}`}>
                                 {problem.category}
                               </Badge>
+                              {solvedProblems.has(problem.problem_id) && (
+                                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Solved
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
                               {problem.description}
