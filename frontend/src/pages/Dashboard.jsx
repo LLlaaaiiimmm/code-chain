@@ -206,6 +206,89 @@ const Dashboard = ({ user, token, onLogout }) => {
             </Card>
           </div>
 
+          {/* Rank and Streak Info */}
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* Rank Card */}
+            <Card className="bg-gradient-to-br from-primary/10 to-purple-500/10 border-primary/20">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="text-5xl">
+                    {stats?.current_rank?.icon || "👨‍💻"}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground mb-1">Current Rank</p>
+                    <h3 className="font-secondary text-2xl font-bold" style={{color: stats?.current_rank?.color}}>
+                      {stats?.current_rank?.name || "Junior Developer"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Keep solving to reach the next rank!
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Streak Card */}
+            <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <Flame className="w-12 h-12 text-orange-400" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground mb-1">Daily Streak</p>
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="font-secondary text-4xl font-bold text-orange-400">
+                        {stats?.daily_streak || 0}
+                      </h3>
+                      <span className="text-sm text-muted-foreground">days</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats?.daily_streak > 0 
+                        ? "Amazing consistency! Keep it up! 🔥" 
+                        : "Solve a problem today to start your streak!"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Achievements */}
+          {stats?.recent_achievements?.length > 0 && (
+            <Card className="bg-card border-border mb-8">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="font-secondary text-xl flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-400" />
+                  Recent Achievements
+                </CardTitle>
+                <Link to="/achievements">
+                  <Button variant="ghost" size="sm">
+                    View All <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {stats.recent_achievements.map((ach, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-purple-500/10 border border-primary/20"
+                    >
+                      <div className="text-3xl mb-2">{ach.icon}</div>
+                      <h4 className="font-semibold mb-1">{ach.name}</h4>
+                      <p className="text-xs text-muted-foreground mb-2">{ach.description}</p>
+                      <Badge variant="outline" className="text-xs">
+                        +{ach.points} pts
+                      </Badge>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Recent Activity */}
             <Card className="lg:col-span-2 bg-card border-border">
