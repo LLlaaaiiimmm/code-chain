@@ -389,6 +389,18 @@ const Dashboard = ({ user, token, onLogout }) => {
                       </div>
                     </div>
                   </Link>
+                  
+                  <Link to="/analytics" className="block">
+                    <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-blue-400">Analytics</p>
+                          <p className="text-sm text-muted-foreground">Track your progress</p>
+                        </div>
+                        <BarChart3 className="w-5 h-5 text-blue-400" />
+                      </div>
+                    </div>
+                  </Link>
                 </CardContent>
               </Card>
 
