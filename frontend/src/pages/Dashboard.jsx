@@ -106,8 +106,14 @@ const Dashboard = ({ user, token, onLogout }) => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/pricing" className="flex items-center gap-2">
+                  <Link to="/certificates" className="flex items-center gap-2">
                     <Award className="w-4 h-4" />
+                    Certificates
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/pricing" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
                     Upgrade Plan
                   </Link>
                 </DropdownMenuItem>
