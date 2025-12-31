@@ -176,6 +176,12 @@ const AppRouter = ({ user, loading, login, logout, token }) => {
         <Profile user={user} token={token} onLogout={logout} />
       } />
       
+      <Route path="/certificates" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <Certificates user={user} token={token} onLogout={logout} />
+        </ProtectedRoute>
+      } />
+      
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
