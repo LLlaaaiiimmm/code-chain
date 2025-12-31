@@ -298,6 +298,24 @@ const Dashboard = ({ user, token, onLogout }) => {
             </Card>
           )}
 
+          {/* New Widgets Section */}
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            {/* Daily Challenges */}
+            <div className="lg:col-span-2">
+              <DailyChallenges token={token} />
+            </div>
+            
+            {/* Personal Insights */}
+            <div>
+              <PersonalInsights token={token} />
+            </div>
+          </div>
+
+          {/* Recommended Problems */}
+          <div className="mb-8">
+            <RecommendedProblems token={token} />
+          </div>
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Recent Activity */}
             <Card className="lg:col-span-2 bg-card border-border">
