@@ -170,11 +170,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Global leaderboard with ranking, user stats, ELO-based sorting"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Leaderboard system working correctly. ELO updates properly tracked during testing."
 
   - task: "Hackathons API"
     implemented: true
