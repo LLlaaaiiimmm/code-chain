@@ -187,10 +187,13 @@ contract MultiSigWallet {
     // TODO: Implement your solution
 }""",
         "test_cases": [
-            {"input": "submitTransaction(to, value, data)", "expected": "tx created"},
-            {"input": "confirmTransaction(0) by owner1", "expected": "confirmed"},
-            {"input": "confirmTransaction(0) by owner2", "expected": "confirmed"},
-            {"input": "executeTransaction(0)", "expected": "executed"}
+            {
+                "type": "call",
+                "function": "required",
+                "args": [],
+                "expected": "2",
+                "description": "Should require 2 confirmations"
+            }
         ],
         "hints": [
             "Use modifiers to check if caller is an owner",
@@ -238,7 +241,14 @@ contract SecureVault {
     }
 }""",
         "test_cases": [
-            {"input": "deposit{value: 1 ether}()", "expected": "balance updated"},
+            {
+                "type": "transaction",
+                "function": "deposit",
+                "args": [],
+                "expected": "success",
+                "description": "Should accept deposits"
+            }
+        ],
             {"input": "withdraw()", "expected": "balance = 0, eth sent"},
             {"input": "reentrancy attack", "expected": "reverted"}
         ],
