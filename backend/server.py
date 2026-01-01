@@ -2152,6 +2152,523 @@ async def get_personal_insights(user: dict = Depends(get_current_user)):
         }
     }
 
+# ============== DAILY CHALLENGES ENDPOINTS ==============
+
+@api_router.get("/challenges/daily")
+async def get_daily_challenges(user: dict = Depends(get_current_user)):
+    """Get today's daily challenges"""
+    user_id = user["user_id"]
+    today = datetime.now(timezone.utc).date().isoformat()
+    
+    # Check if daily challenges already exist for today
+    existing_challenges = await db.daily_challenges.find_one({
+        "user_id": user_id,
+        "date": today
+    })
+    
+    if existing_challenges:
+        return {
+            "date": today,
+            "challenges": existing_challenges.get("challenges", []),
+            "completed": existing_challenges.get("completed", 0),
+            "total": 3,
+            "bonus_earned": existing_challenges.get("bonus_earned", False)
+        }
+    
+    # Generate new daily challenges
+    user_elo = user.get("elo_rating", 1200)
+    
+    # Determine appropriate difficulties
+    if user_elo < 1300:
+        difficulties = ["junior", "junior", "middle"]
+    elif user_elo < 1600:
+        difficulties = ["junior", "middle", "senior"]
+    else:
+        difficulties = ["middle", "senior", "expert"]
+    
+    # Get solved problem IDs
+    solved_ids = []
+    solved_subs = await db.submissions.find(
+        {"user_id": user_id, "status": "passed"},
+        {"problem_id": 1}
+    ).to_list(None)
+    solved_ids = [s["problem_id"] for s in solved_subs]
+    
+    challenges = []
+    for i, diff in enumerate(difficulties):
+        # Find unsolved problem
+        problem = await db.problems.find_one({
+            "difficulty": diff,
+            "problem_id": {"$nin": solved_ids + [c.get("problem_id") for c in challenges]}
+        }, {"_id": 0})
+        
+        if problem:
+            bonus_elo = {"junior": 5, "middle": 10, "senior": 15, "expert": 25}
+            challenges.append({
+                "challenge_id": f"daily_{today}_{i+1}",
+                "problem_id": problem["problem_id"],
+                "title": problem["title"],
+                "difficulty": problem["difficulty"],
+                "category": problem["category"],
+                "bonus_elo": bonus_elo.get(diff, 5),
+                "completed": False
+            })
+    
+    # Store challenges
+    await db.daily_challenges.insert_one({
+        "user_id": user_id,
+        "date": today,
+        "challenges": challenges,
+        "completed": 0,
+        "bonus_earned": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {
+        "date": today,
+        "challenges": challenges,
+        "completed": 0,
+        "total": len(challenges),
+        "bonus_earned": False
+    }
+
+@api_router.post("/challenges/daily/complete/{problem_id}")
+async def complete_daily_challenge(problem_id: str, user: dict = Depends(get_current_user)):
+    """Mark a daily challenge as complete"""
+    user_id = user["user_id"]
+    today = datetime.now(timezone.utc).date().isoformat()
+    
+    # Get today's challenges
+    daily_record = await db.daily_challenges.find_one({
+        "user_id": user_id,
+        "date": today
+    })
+    
+    if not daily_record:
+        raise HTTPException(status_code=404, detail="No daily challenges found for today")
+    
+    challenges = daily_record.get("challenges", [])
+    challenge_index = next((i for i, c in enumerate(challenges) if c["problem_id"] == problem_id), None)
+    
+    if challenge_index is None:
+        raise HTTPException(status_code=404, detail="Problem is not in today's challenges")
+    
+    # Mark challenge as completed
+    challenges[challenge_index]["completed"] = True
+    completed_count = sum(1 for c in challenges if c["completed"])
+    
+    # Award bonus if all challenges completed
+    bonus_earned = False
+    if completed_count == len(challenges) and not daily_record.get("bonus_earned"):
+        # Award completion bonus
+        total_bonus = sum(c["bonus_elo"] for c in challenges)
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$inc": {"elo_rating": total_bonus}}
+        )
+        bonus_earned = True
+    
+    # Update record
+    await db.daily_challenges.update_one(
+        {"user_id": user_id, "date": today},
+        {
+            "$set": {
+                "challenges": challenges,
+                "completed": completed_count,
+                "bonus_earned": bonus_earned
+            }
+        }
+    )
+    
+    return {
+        "completed": completed_count,
+        "total": len(challenges),
+        "bonus_earned": bonus_earned,
+        "bonus_elo": sum(c["bonus_elo"] for c in challenges) if bonus_earned else 0
+    }
+
+# ============== PROBLEM ANALYTICS ENDPOINTS ==============
+
+@api_router.get("/problems/{problem_id}/analytics")
+async def get_problem_analytics(problem_id: str, user: dict = Depends(get_current_user)):
+    """Get detailed analytics for a specific problem"""
+    user_id = user["user_id"]
+    
+    # Get problem details
+    problem = await db.problems.find_one({"problem_id": problem_id}, {"_id": 0})
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+    
+    # Get all user's submissions for this problem
+    user_submissions = await db.submissions.find({
+        "user_id": user_id,
+        "problem_id": problem_id
+    }, {"_id": 0}).sort("created_at", 1).to_list(None)
+    
+    attempts_count = len(user_submissions)
+    passed_submission = next((s for s in user_submissions if s["status"] == "passed"), None)
+    
+    # Calculate time spent (if solved)
+    time_spent_minutes = None
+    if passed_submission and attempts_count > 0:
+        first_attempt = user_submissions[0]
+        last_attempt = passed_submission
+        first_time = datetime.fromisoformat(first_attempt["created_at"])
+        last_time = datetime.fromisoformat(last_attempt["created_at"])
+        time_spent_minutes = int((last_time - first_time).total_seconds() / 60)
+    
+    # Get global statistics
+    all_submissions = await db.submissions.find({"problem_id": problem_id}).to_list(None)
+    total_attempts = len(all_submissions)
+    successful_submissions = [s for s in all_submissions if s["status"] == "passed"]
+    success_count = len(successful_submissions)
+    success_rate = (success_count / max(total_attempts, 1)) * 100
+    
+    # Calculate average gas and time
+    avg_gas = sum(s.get("gas_used", 0) for s in successful_submissions) / max(success_count, 1)
+    avg_time_ms = sum(s.get("execution_time_ms", 0) for s in successful_submissions) / max(success_count, 1)
+    
+    # User's best performance
+    user_performance = None
+    if passed_submission:
+        user_gas = passed_submission.get("gas_used", 0)
+        user_time_ms = passed_submission.get("execution_time_ms", 0)
+        
+        # Calculate efficiency score (lower is better)
+        gas_efficiency = (user_gas / max(avg_gas, 1)) * 100
+        time_efficiency = (user_time_ms / max(avg_time_ms, 1)) * 100
+        overall_efficiency = (gas_efficiency + time_efficiency) / 2
+        
+        # Rank among all solvers
+        better_solutions = 0
+        for sub in successful_submissions:
+            sub_gas = sub.get("gas_used", 0)
+            sub_time = sub.get("execution_time_ms", 0)
+            sub_score = (sub_gas / max(avg_gas, 1) + sub_time / max(avg_time_ms, 1)) / 2
+            if sub_score < (gas_efficiency + time_efficiency) / 200:
+                better_solutions += 1
+        
+        user_rank = better_solutions + 1
+        
+        user_performance = {
+            "gas_used": user_gas,
+            "execution_time_ms": user_time_ms,
+            "gas_efficiency_percentile": 100 - gas_efficiency if gas_efficiency <= 100 else 0,
+            "time_efficiency_percentile": 100 - time_efficiency if time_efficiency <= 100 else 0,
+            "overall_efficiency_score": round(overall_efficiency, 1),
+            "rank_among_solvers": user_rank,
+            "total_solvers": success_count
+        }
+    
+    return {
+        "problem": problem,
+        "user_stats": {
+            "attempts": attempts_count,
+            "solved": passed_submission is not None,
+            "time_spent_minutes": time_spent_minutes,
+            "performance": user_performance
+        },
+        "global_stats": {
+            "total_attempts": total_attempts,
+            "success_count": success_count,
+            "success_rate": round(success_rate, 1),
+            "avg_gas_used": round(avg_gas, 0),
+            "avg_execution_time_ms": round(avg_time_ms, 0)
+        }
+    }
+
+# ============== FRIENDS & SOCIAL ENDPOINTS ==============
+
+@api_router.post("/friends/add/{friend_id}")
+async def add_friend(friend_id: str, user: dict = Depends(get_current_user)):
+    """Send friend request"""
+    user_id = user["user_id"]
+    
+    if user_id == friend_id:
+        raise HTTPException(status_code=400, detail="Cannot add yourself as friend")
+    
+    # Check if friend exists
+    friend = await db.users.find_one({"user_id": friend_id})
+    if not friend:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already friends or request pending
+    existing = await db.friendships.find_one({
+        "$or": [
+            {"user_id": user_id, "friend_id": friend_id},
+            {"user_id": friend_id, "friend_id": user_id}
+        ]
+    })
+    
+    if existing:
+        if existing.get("status") == "accepted":
+            raise HTTPException(status_code=400, detail="Already friends")
+        else:
+            raise HTTPException(status_code=400, detail="Friend request already sent")
+    
+    # Create friendship request
+    await db.friendships.insert_one({
+        "user_id": user_id,
+        "friend_id": friend_id,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"message": "Friend request sent"}
+
+@api_router.post("/friends/accept/{user_id}")
+async def accept_friend_request(user_id: str, user: dict = Depends(get_current_user)):
+    """Accept friend request"""
+    friend_id = user["user_id"]
+    
+    # Find pending request
+    request_doc = await db.friendships.find_one({
+        "user_id": user_id,
+        "friend_id": friend_id,
+        "status": "pending"
+    })
+    
+    if not request_doc:
+        raise HTTPException(status_code=404, detail="Friend request not found")
+    
+    # Update status
+    await db.friendships.update_one(
+        {"user_id": user_id, "friend_id": friend_id},
+        {"$set": {"status": "accepted", "accepted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Friend request accepted"}
+
+@api_router.get("/friends/list")
+async def get_friends_list(user: dict = Depends(get_current_user)):
+    """Get list of friends"""
+    user_id = user["user_id"]
+    
+    # Find all accepted friendships
+    friendships = await db.friendships.find({
+        "$or": [
+            {"user_id": user_id, "status": "accepted"},
+            {"friend_id": user_id, "status": "accepted"}
+        ]
+    }).to_list(None)
+    
+    friend_ids = []
+    for fs in friendships:
+        friend_id = fs["friend_id"] if fs["user_id"] == user_id else fs["user_id"]
+        friend_ids.append(friend_id)
+    
+    # Get friend details
+    friends = await db.users.find(
+        {"user_id": {"$in": friend_ids}},
+        {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "elo_rating": 1, "problems_solved": 1}
+    ).to_list(None)
+    
+    return {"friends": friends, "count": len(friends)}
+
+@api_router.get("/friends/requests")
+async def get_friend_requests(user: dict = Depends(get_current_user)):
+    """Get pending friend requests"""
+    user_id = user["user_id"]
+    
+    # Find pending requests where user is the recipient
+    requests = await db.friendships.find({
+        "friend_id": user_id,
+        "status": "pending"
+    }).to_list(None)
+    
+    # Get requester details
+    requester_ids = [r["user_id"] for r in requests]
+    requesters = await db.users.find(
+        {"user_id": {"$in": requester_ids}},
+        {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "elo_rating": 1}
+    ).to_list(None)
+    
+    return {"requests": requesters, "count": len(requesters)}
+
+@api_router.get("/friends/compare/{friend_id}")
+async def compare_with_friend(friend_id: str, user: dict = Depends(get_current_user)):
+    """Compare stats with a friend"""
+    user_id = user["user_id"]
+    
+    # Verify friendship
+    friendship = await db.friendships.find_one({
+        "$or": [
+            {"user_id": user_id, "friend_id": friend_id, "status": "accepted"},
+            {"user_id": friend_id, "friend_id": user_id, "status": "accepted"}
+        ]
+    })
+    
+    if not friendship:
+        raise HTTPException(status_code=403, detail="Not friends with this user")
+    
+    # Get both users' stats
+    friend = await db.users.find_one({"user_id": friend_id}, {"_id": 0})
+    if not friend:
+        raise HTTPException(status_code=404, detail="Friend not found")
+    
+    # Get detailed stats for both
+    user_submissions = await db.submissions.find({"user_id": user_id, "status": "passed"}).to_list(None)
+    friend_submissions = await db.submissions.find({"user_id": friend_id, "status": "passed"}).to_list(None)
+    
+    user_streak = await calculate_daily_streak(user_id)
+    friend_streak = await calculate_daily_streak(friend_id)
+    
+    comparison = {
+        "user": {
+            "user_id": user_id,
+            "name": user["name"],
+            "picture": user.get("picture"),
+            "elo": user.get("elo_rating", 1200),
+            "problems_solved": user.get("problems_solved", 0),
+            "daily_streak": user_streak,
+            "submissions_count": len(user_submissions)
+        },
+        "friend": {
+            "user_id": friend_id,
+            "name": friend["name"],
+            "picture": friend.get("picture"),
+            "elo": friend.get("elo_rating", 1200),
+            "problems_solved": friend.get("problems_solved", 0),
+            "daily_streak": friend_streak,
+            "submissions_count": len(friend_submissions)
+        },
+        "differences": {
+            "elo": user.get("elo_rating", 1200) - friend.get("elo_rating", 1200),
+            "problems_solved": user.get("problems_solved", 0) - friend.get("problems_solved", 0),
+            "streak": user_streak - friend_streak
+        }
+    }
+    
+    return comparison
+
+# ============== ADVANCED LEADERBOARD ENDPOINTS ==============
+
+@api_router.get("/leaderboard/by-category/{category}")
+async def get_category_leaderboard(category: str, limit: int = 100):
+    """Get leaderboard filtered by technology category"""
+    # Get all users with their submissions
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "submissions",
+                "let": {"user_id": "$user_id"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {"$eq": ["$user_id", "$$user_id"]},
+                            "status": "passed"
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "problems",
+                            "localField": "problem_id",
+                            "foreignField": "problem_id",
+                            "as": "problem"
+                        }
+                    },
+                    {"$unwind": "$problem"},
+                    {"$match": {"problem.category": category}}
+                ],
+                "as": "category_submissions"
+            }
+        },
+        {
+            "$addFields": {
+                "category_problems_solved": {"$size": "$category_submissions"}
+            }
+        },
+        {"$match": {"category_problems_solved": {"$gt": 0}}},
+        {"$sort": {"category_problems_solved": -1, "elo_rating": -1}},
+        {"$limit": limit},
+        {
+            "$project": {
+                "_id": 0,
+                "user_id": 1,
+                "name": 1,
+                "picture": 1,
+                "elo_rating": 1,
+                "category_problems_solved": 1
+            }
+        }
+    ]
+    
+    users = await db.users.aggregate(pipeline).to_list(limit)
+    
+    leaderboard = []
+    for i, user_data in enumerate(users):
+        leaderboard.append({
+            "rank": i + 1,
+            **user_data
+        })
+    
+    return {"category": category, "leaderboard": leaderboard}
+
+@api_router.get("/leaderboard/by-period/{period}")
+async def get_period_leaderboard(period: str, limit: int = 100):
+    """Get leaderboard for a specific time period (week, month, year)"""
+    now = datetime.now(timezone.utc)
+    
+    if period == "week":
+        start_date = (now - timedelta(days=7)).isoformat()
+    elif period == "month":
+        start_date = (now - timedelta(days=30)).isoformat()
+    elif period == "year":
+        start_date = (now - timedelta(days=365)).isoformat()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period. Use: week, month, or year")
+    
+    # Get users with submissions in period
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "submissions",
+                "let": {"user_id": "$user_id"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {"$eq": ["$user_id", "$$user_id"]},
+                            "status": "passed",
+                            "created_at": {"$gte": start_date}
+                        }
+                    }
+                ],
+                "as": "period_submissions"
+            }
+        },
+        {
+            "$addFields": {
+                "period_problems_solved": {"$size": "$period_submissions"},
+                "period_elo_gained": {"$sum": "$period_submissions.elo_change"}
+            }
+        },
+        {"$match": {"period_problems_solved": {"$gt": 0}}},
+        {"$sort": {"period_problems_solved": -1, "period_elo_gained": -1}},
+        {"$limit": limit},
+        {
+            "$project": {
+                "_id": 0,
+                "user_id": 1,
+                "name": 1,
+                "picture": 1,
+                "elo_rating": 1,
+                "period_problems_solved": 1,
+                "period_elo_gained": 1
+            }
+        }
+    ]
+    
+    users = await db.users.aggregate(pipeline).to_list(limit)
+    
+    leaderboard = []
+    for i, user_data in enumerate(users):
+        leaderboard.append({
+            "rank": i + 1,
+            **user_data
+        })
+    
+    return {"period": period, "start_date": start_date, "leaderboard": leaderboard}
+
 # ============== MAIN ==============
 
 app.include_router(api_router)
