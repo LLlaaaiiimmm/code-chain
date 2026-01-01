@@ -909,28 +909,26 @@ async def create_submission(submission: SubmissionCreate, user: dict = Depends(g
     
     submission_id = f"sub_{uuid.uuid4().hex[:8]}"
     
-    # Simulate Solidity compilation and test execution
-    test_results = []
-    all_passed = True
-    total_gas = 0
-    
-    for i, test_case in enumerate(problem.get("test_cases", [])):
-        # Simplified simulation - in production, use actual Solidity compiler
-        passed = "revert" not in submission.code.lower() and "error" not in submission.code.lower()
-        gas = 21000 + len(submission.code) * 10  # Simplified gas calculation
-        
-        test_results.append({
-            "test_id": i + 1,
-            "input": test_case.get("input", ""),
-            "expected": test_case.get("expected", ""),
-            "passed": passed,
-            "gas_used": gas,
-            "error": None if passed else "Execution failed"
-        })
-        
-        if not passed:
-            all_passed = False
-        total_gas += gas
+    # Real code validation and testing
+    try:
+        all_passed, test_results, total_gas, error_message = await code_validator.validate_submission(
+            code=submission.code,
+            problem=problem,
+            language=submission.language
+        )
+    except Exception as e:
+        # If validator fails, return error
+        all_passed = False
+        test_results = [{
+            "test_id": 0,
+            "input": "Validation",
+            "expected": "Success",
+            "passed": False,
+            "gas_used": 0,
+            "error": f"Validation system error: {str(e)}"
+        }]
+        total_gas = 0
+        error_message = str(e)
     
     status = "passed" if all_passed else "failed"
     elo_change = 0
