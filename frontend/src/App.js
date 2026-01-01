@@ -187,6 +187,36 @@ const AppRouter = ({ user, loading, login, logout, token }) => {
         </ProtectedRoute>
       } />
       
+      <Route path="/achievements" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <Achievements user={user} token={token} onLogout={logout} />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/analytics" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <Analytics user={user} token={token} />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/leaderboard-advanced" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <LeaderboardAdvanced user={user} token={token} />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/compare/:userId" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <UserComparison user={user} token={token} />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/problem-analytics/:problemId" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <ProblemAnalytics user={user} token={token} />
+        </ProtectedRoute>
+      } />
+      
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
