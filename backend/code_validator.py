@@ -1,12 +1,19 @@
 """
 Code validation and testing system for CodeChain platform
 Supports: Solidity, Rust/Solana, FunC/TON, General Cryptography
+
+Enhanced validation system with:
+- Real code compilation and execution
+- Structured test cases with multiple test types
+- Detailed error reporting
+- Support for function calls, state checks, events, and reverts
 """
 
 import re
 import json
 import hashlib
-from typing import Dict, List, Any, Tuple
+import ast
+from typing import Dict, List, Any, Tuple, Optional
 try:
     from solcx import compile_source, install_solc, set_solc_version
 except ImportError:
@@ -19,6 +26,7 @@ from eth_account import Account
 import subprocess
 import tempfile
 import os
+import sys
 
 
 class CodeValidator:
