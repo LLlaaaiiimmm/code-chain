@@ -7,7 +7,13 @@ import re
 import json
 import hashlib
 from typing import Dict, List, Any, Tuple
-from solcx import compile_source, install_solc, set_solc_version
+try:
+    from solcx import compile_source, install_solc, set_solc_version
+except ImportError:
+    # Fallback if solcx not available
+    compile_source = None
+    install_solc = None
+    set_solc_version = None
 from web3 import Web3
 from eth_account import Account
 import subprocess
