@@ -161,46 +161,13 @@ export const DailyChallenges = ({ token }) => {
                     </div>
                     
                     <p className="text-xs text-muted-foreground mb-2">
-                      {challenge.description}
+                      {challenge.category.toUpperCase()} • {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
                     </p>
                     
-                    {/* Progress bar for count-based challenges */}
-                    {(challenge.type === "solve_count" || challenge.type === "category_focus") && !challenge.completed && (
-                      <div className="mb-2">
-                        <Progress 
-                          value={(challenge.progress / challenge.target) * 100} 
-                          className="h-1.5"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {challenge.progress} / {challenge.target} completed
-                        </p>
-                      </div>
-                    )}
-                    
-                    {/* Action buttons */}
-                    {challenge.completed && !challenge.claimed && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs mt-2"
-                        onClick={() => claimReward(challenge.challenge_id)}
-                        disabled={claimingId === challenge.challenge_id}
-                      >
-                        {claimingId === challenge.challenge_id ? (
-                          "Claiming..."
-                        ) : (
-                          <>
-                            <Trophy className="w-3 h-3 mr-1" />
-                            Claim Reward
-                          </>
-                        )}
-                      </Button>
-                    )}
-                    
-                    {challenge.completed && challenge.claimed && (
-                      <Badge variant="outline" className="text-xs text-green-400 border-green-400/50 mt-2">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Claimed
+                    {!challenge.completed && challenge.bonus_elo && (
+                      <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-400/50">
+                        <Trophy className="w-3 h-3 mr-1" />
+                        +{challenge.bonus_elo} ELO
                       </Badge>
                     )}
                     
