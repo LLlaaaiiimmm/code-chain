@@ -23,7 +23,7 @@ export const DailyChallenges = ({ token }) => {
 
   const fetchChallenges = async () => {
     try {
-      const response = await axios.get(`${API}/daily-challenges`, {
+      const response = await axios.get(`${API}/challenges/daily`, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
