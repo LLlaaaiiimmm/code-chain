@@ -836,23 +836,152 @@ class CodeValidator:
         code: str, 
         problem: Dict[str, Any]
     ) -> Tuple[bool, List[Dict], int, str]:
-        """Validate FunC/TON contract"""
+        """
+        Validate FunC/TON contract
+        
+        Attempts real compilation if func compiler available,
+        otherwise falls back to pattern matching
+        """
         
         test_results = []
+        all_passed = True
+        
+        # Step 1: Check for incomplete code
+        if "TODO" in code or "..." in code:
+            todo_count = code.count("TODO") + code.count("...")
+            if todo_count > 2:
+                test_results.append({
+                    "test_id": 1,
+                    "input": "Implementation check",
+                    "expected": "Complete",
+                    "passed": False,
+                    "gas_used": 0,
+                    "error": f"❌ Code incomplete - found {todo_count} TODO/... markers"
+                })
+                return False, test_results, 0, "Incomplete implementation"
+        
+        # Step 2: Try FunC compilation
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                func_file = os.path.join(tmpdir, "contract.fc")
+                with open(func_file, 'w') as f:
+                    f.write(code)
+                
+                # Try to compile with func
+                result = subprocess.run(
+                    ['func', '-o', os.path.join(tmpdir, 'contract.fif'), func_file],
+                    capture_output=True,
+                    text=True,
+                    timeout=15
+                )
+                
+                if result.returncode == 0:
+                    test_results.append({
+                        "test_id": 2,
+                        "input": "FunC compilation",
+                        "expected": "Success",
+                        "passed": True,
+                        "gas_used": 0,
+                        "error": None,
+                        "actual": "✓ Code compiles successfully"
+                    })
+                else:
+                    error_msg = result.stderr[:300] if result.stderr else "Compilation failed"
+                    test_results.append({
+                        "test_id": 2,
+                        "input": "FunC compilation",
+                        "expected": "Success",
+                        "passed": False,
+                        "gas_used": 0,
+                        "error": f"❌ Compilation error: {error_msg}"
+                    })
+                    all_passed = False
+                    return all_passed, test_results, 0, "FunC compilation failed"
+                    
+        except FileNotFoundError:
+            # FunC compiler not installed - use pattern matching
+            test_results.append({
+                "test_id": 2,
+                "input": "FunC compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": "⚠️ FunC compiler not available - using pattern matching"
+            })
+            return await self._validate_func_patterns(code, problem)
+            
+        except subprocess.TimeoutExpired:
+            test_results.append({
+                "test_id": 2,
+                "input": "FunC compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Compilation timeout"
+            })
+            return False, test_results, 0, "Compilation timeout"
+            
+        except Exception as e:
+            test_results.append({
+                "test_id": 2,
+                "input": "FunC compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": f"❌ Error: {str(e)[:200]}"
+            })
+            return False, test_results, 0, str(e)
+        
+        # Step 3: Additional pattern checks
+        test_cases = problem.get("test_cases", [])
+        
+        for i, test_case in enumerate(test_cases):
+            pattern = test_case.get("pattern", "")
+            description = test_case.get("description", f"Test {i+1}")
+            
+            if pattern and re.search(pattern, code):
+                test_results.append({
+                    "test_id": len(test_results) + 1,
+                    "input": description,
+                    "expected": "Pattern found",
+                    "passed": True,
+                    "gas_used": 0,
+                    "error": None
+                })
+            elif pattern:
+                test_results.append({
+                    "test_id": len(test_results) + 1,
+                    "input": description,
+                    "expected": "Pattern found",
+                    "passed": False,
+                    "gas_used": 0,
+                    "error": f"❌ Required pattern not found"
+                })
+                all_passed = False
+        
+        return all_passed, test_results, 0, None if all_passed else "FunC validation failed"
+    
+    async def _validate_func_patterns(
+        self,
+        code: str,
+        problem: Dict[str, Any]
+    ) -> Tuple[bool, List[Dict], int, str]:
+        """Fallback pattern-based validation for FunC"""
+        
+        test_results = []
+        all_passed = True
         
         # Basic FunC syntax checks
         required_patterns = [
-            r"recv_internal",
-            r"method_id",
+            (r"recv_internal|recv_external", "Message receiver function"),
+            (r"method_id", "Method ID declaration"),
         ]
         
-        all_passed = True
-        
-        for i, pattern in enumerate(required_patterns):
+        for i, (pattern, description) in enumerate(required_patterns):
             if re.search(pattern, code):
                 test_results.append({
                     "test_id": i + 1,
-                    "input": f"Pattern check: {pattern}",
+                    "input": description,
                     "expected": "Found",
                     "passed": True,
                     "gas_used": 0,
@@ -861,15 +990,15 @@ class CodeValidator:
             else:
                 test_results.append({
                     "test_id": i + 1,
-                    "input": f"Pattern check: {pattern}",
+                    "input": description,
                     "expected": "Found",
                     "passed": False,
                     "gas_used": 0,
-                    "error": f"Missing required FunC pattern: {pattern}"
+                    "error": f"❌ Missing: {description}"
                 })
                 all_passed = False
         
-        return all_passed, test_results, 0, None if all_passed else "FunC validation failed"
+        return all_passed, test_results, 0, None if all_passed else "Pattern validation failed"
     
     async def _validate_cryptography(
         self, 
