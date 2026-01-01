@@ -972,6 +972,7 @@ async def create_submission(submission: SubmissionCreate, user: dict = Depends(g
         "gas_used": total_gas,
         "execution_time_ms": len(submission.code) // 10,
         "elo_change": elo_change if all_passed else 0,
+        "error_message": error_message if not all_passed else None,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
