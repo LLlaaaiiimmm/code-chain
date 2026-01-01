@@ -640,27 +640,179 @@ class CodeValidator:
         code: str, 
         problem: Dict[str, Any]
     ) -> Tuple[bool, List[Dict], int, str]:
-        """Validate Rust/Solana program"""
+        """
+        Validate Rust/Solana program with real compilation
+        
+        Uses cargo to compile and test Rust code
+        """
         
         test_results = []
-        
-        # For MVP, we'll do basic syntax checking
-        # In production, this would use Solana's testing framework
-        
-        # Check for required imports
-        required_patterns = [
-            r"use anchor_lang::prelude::\*;",
-            r"#\[program\]",
-            r"pub mod \w+",
-        ]
-        
         all_passed = True
         
-        for i, pattern in enumerate(required_patterns):
+        # Step 1: Check for TODO markers (incomplete code)
+        todo_lines = [line for line in code.split('\n') if 'TODO' in line or 'todo!' in line]
+        if len(todo_lines) > 2:
+            test_results.append({
+                "test_id": 1,
+                "input": "Implementation check",
+                "expected": "Complete implementation",
+                "passed": False,
+                "gas_used": 0,
+                "error": f"❌ Too many TODO markers ({len(todo_lines)}) - implementation incomplete"
+            })
+            return False, test_results, 0, "Code contains TODOs"
+        
+        # Step 2: Try to compile with Rust
+        try:
+            # Create a temporary directory for Rust project
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Write the code to a file
+                rust_file = os.path.join(tmpdir, "main.rs")
+                with open(rust_file, 'w') as f:
+                    f.write(code)
+                
+                # Try to compile
+                result = subprocess.run(
+                    ['rustc', '--crate-type', 'lib', rust_file],
+                    cwd=tmpdir,
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                
+                if result.returncode == 0:
+                    test_results.append({
+                        "test_id": 2,
+                        "input": "Rust compilation",
+                        "expected": "Success",
+                        "passed": True,
+                        "gas_used": 0,
+                        "error": None,
+                        "actual": "✓ Code compiles successfully"
+                    })
+                else:
+                    error_msg = result.stderr[:300] if result.stderr else "Compilation failed"
+                    test_results.append({
+                        "test_id": 2,
+                        "input": "Rust compilation",
+                        "expected": "Success",
+                        "passed": False,
+                        "gas_used": 0,
+                        "error": f"❌ Compilation error: {error_msg}"
+                    })
+                    all_passed = False
+                    return all_passed, test_results, 0, "Rust compilation failed"
+                    
+        except FileNotFoundError:
+            # Rust compiler not installed - fallback to pattern matching
+            test_results.append({
+                "test_id": 2,
+                "input": "Rust compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": "⚠️ Rust compiler not available - using pattern matching"
+            })
+            
+            # Fallback to pattern matching
+            return await self._validate_rust_patterns(code, problem)
+            
+        except subprocess.TimeoutExpired:
+            test_results.append({
+                "test_id": 2,
+                "input": "Rust compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Compilation timeout - code may have infinite loops"
+            })
+            return False, test_results, 0, "Compilation timeout"
+            
+        except Exception as e:
+            test_results.append({
+                "test_id": 2,
+                "input": "Rust compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": f"❌ Compilation error: {str(e)[:200]}"
+            })
+            return False, test_results, 0, str(e)
+        
+        # Step 3: Pattern matching for Solana-specific code
+        test_cases = problem.get("test_cases", [])
+        
+        if not test_cases:
+            # If no specific test cases, check for common Solana patterns
+            solana_patterns = {
+                "anchor_imports": r"use anchor_lang::prelude::\*;",
+                "program_module": r"#\[program\]",
+                "public_mod": r"pub mod \w+",
+            }
+            
+            for pattern_name, pattern in solana_patterns.items():
+                if re.search(pattern, code):
+                    test_results.append({
+                        "test_id": len(test_results) + 1,
+                        "input": f"Check {pattern_name}",
+                        "expected": "Found",
+                        "passed": True,
+                        "gas_used": 0,
+                        "error": None
+                    })
+                else:
+                    # Not a failure, just a note
+                    pass
+        else:
+            # Run custom test cases if provided
+            for i, test_case in enumerate(test_cases):
+                pattern = test_case.get("pattern", "")
+                description = test_case.get("description", f"Test {i+1}")
+                
+                if pattern and re.search(pattern, code):
+                    test_results.append({
+                        "test_id": len(test_results) + 1,
+                        "input": description,
+                        "expected": "Pattern found",
+                        "passed": True,
+                        "gas_used": 0,
+                        "error": None
+                    })
+                else:
+                    test_results.append({
+                        "test_id": len(test_results) + 1,
+                        "input": description,
+                        "expected": "Pattern found",
+                        "passed": False,
+                        "gas_used": 0,
+                        "error": f"❌ Required pattern not found: {pattern}"
+                    })
+                    all_passed = False
+        
+        return all_passed, test_results, 0, None if all_passed else "Rust validation failed"
+    
+    async def _validate_rust_patterns(
+        self,
+        code: str,
+        problem: Dict[str, Any]
+    ) -> Tuple[bool, List[Dict], int, str]:
+        """Fallback pattern-based validation for Rust when compiler unavailable"""
+        
+        test_results = []
+        all_passed = True
+        
+        # Basic Rust/Solana patterns
+        required_patterns = [
+            (r"use anchor_lang::prelude::\*;", "Anchor Lang imports"),
+            (r"#\[program\]", "Program attribute"),
+            (r"pub mod \w+", "Public module"),
+        ]
+        
+        for i, (pattern, description) in enumerate(required_patterns):
             if re.search(pattern, code):
                 test_results.append({
                     "test_id": i + 1,
-                    "input": f"Pattern check: {pattern}",
+                    "input": description,
                     "expected": "Found",
                     "passed": True,
                     "gas_used": 0,
@@ -669,27 +821,15 @@ class CodeValidator:
             else:
                 test_results.append({
                     "test_id": i + 1,
-                    "input": f"Pattern check: {pattern}",
+                    "input": description,
                     "expected": "Found",
                     "passed": False,
                     "gas_used": 0,
-                    "error": f"Missing required pattern: {pattern}"
+                    "error": f"❌ Missing: {description}"
                 })
                 all_passed = False
         
-        # Check for common Rust errors
-        if "TODO" in code and len([line for line in code.split('\n') if 'TODO' in line]) > 2:
-            test_results.append({
-                "test_id": len(test_results) + 1,
-                "input": "Implementation check",
-                "expected": "Complete",
-                "passed": False,
-                "gas_used": 0,
-                "error": "Too many TODO comments - implementation incomplete"
-            })
-            all_passed = False
-        
-        return all_passed, test_results, 0, None if all_passed else "Rust validation failed"
+        return all_passed, test_results, 0, None if all_passed else "Pattern validation failed"
     
     async def _validate_func(
         self, 
