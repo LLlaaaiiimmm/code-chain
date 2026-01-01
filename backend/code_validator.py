@@ -28,12 +28,14 @@ class CodeValidator:
         self.w3 = Web3(Web3.EthereumTesterProvider())
         self.account = self.w3.eth.accounts[0]
         
-        # Install Solidity compiler
-        try:
-            install_solc('0.8.0')
-            set_solc_version('0.8.0')
-        except:
-            pass  # Already installed
+        # Install Solidity compiler if available
+        if compile_source and install_solc and set_solc_version:
+            try:
+                install_solc('0.8.0')
+                set_solc_version('0.8.0')
+            except Exception as e:
+                print(f"Warning: Could not install solc: {e}")
+                pass  # Already installed or not available
     
     async def validate_submission(
         self, 
