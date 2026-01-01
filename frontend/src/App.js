@@ -17,6 +17,9 @@ import Pricing from "./pages/Pricing";
 import Certificates from "./pages/Certificates";
 import Achievements from "./pages/Achievements";
 import Analytics from "./pages/Analytics";
+import LeaderboardAdvanced from "./pages/LeaderboardAdvanced";
+import UserComparison from "./pages/UserComparison";
+import ProblemAnalytics from "./pages/ProblemAnalytics";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
