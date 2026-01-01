@@ -132,7 +132,8 @@ const Dashboard = ({ user, token, onLogout }) => {
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </nav>
