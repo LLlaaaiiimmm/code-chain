@@ -40,9 +40,26 @@ contract Greeting {
     }
 }""",
         "test_cases": [
-            {"input": "constructor()", "expected": "owner set"},
-            {"input": "setGreeting('Hello, CodeChain!')", "expected": "success"},
-            {"input": "getGreeting()", "expected": "Hello, CodeChain!"}
+            {
+                "type": "state",
+                "variable": "owner",
+                "expected": "<deployer>",
+                "description": "Owner should be set to deployer"
+            },
+            {
+                "type": "transaction",
+                "function": "setGreeting",
+                "args": ["Hello, CodeChain!"],
+                "expected": "success",
+                "description": "Should set greeting successfully"
+            },
+            {
+                "type": "call",
+                "function": "getGreeting",
+                "args": [],
+                "expected": "Hello, CodeChain!",
+                "description": "Should return correct greeting"
+            }
         ],
         "hints": [
             "Use a string state variable to store the greeting",
@@ -99,9 +116,33 @@ contract SimpleToken {
     }
 }""",
         "test_cases": [
-            {"input": "mint(user1, 1000)", "expected": "totalSupply: 1000"},
-            {"input": "transfer(user2, 500)", "expected": "success, Transfer event"},
-            {"input": "balanceOf(user1)", "expected": "500"}
+            {
+                "type": "state",
+                "variable": "owner",
+                "expected": "<deployer>",
+                "description": "Owner should be deployer"
+            },
+            {
+                "type": "call",
+                "function": "name",
+                "args": [],
+                "expected": "CodeChain Token",
+                "description": "Should have correct name"
+            },
+            {
+                "type": "transaction",
+                "function": "mint",
+                "args": ["0x1234567890123456789012345678901234567890", 1000],
+                "expected": "success",
+                "description": "Mint 1000 tokens"
+            },
+            {
+                "type": "call",
+                "function": "totalSupply",
+                "args": [],
+                "expected": "1000",
+                "description": "Total supply should be 1000"
+            }
         ],
         "hints": [
             "Check for sufficient balance before transfer",
