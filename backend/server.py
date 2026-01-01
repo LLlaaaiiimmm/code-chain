@@ -2669,6 +2669,95 @@ async def get_period_leaderboard(period: str, limit: int = 100):
     
     return {"period": period, "start_date": start_date, "leaderboard": leaderboard}
 
+# ============== NOTIFICATIONS ENDPOINTS ==============
+
+@api_router.get("/notifications")
+async def get_notifications(user: dict = Depends(get_current_user), limit: int = 20):
+    """Get user notifications"""
+    user_id = user["user_id"]
+    
+    notifications = await db.notifications.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    unread_count = await db.notifications.count_documents({
+        "user_id": user_id,
+        "read": False
+    })
+    
+    return {
+        "notifications": notifications,
+        "unread_count": unread_count
+    }
+
+@api_router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user: dict = Depends(get_current_user)):
+    """Mark notification as read"""
+    result = await db.notifications.update_one(
+        {"notification_id": notification_id, "user_id": user["user_id"]},
+        {"$set": {"read": True}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    return {"message": "Notification marked as read"}
+
+async def create_notification(user_id: str, type: str, title: str, message: str, data: dict = None):
+    """Helper function to create notifications"""
+    notification = {
+        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+        "user_id": user_id,
+        "type": type,
+        "title": title,
+        "message": message,
+        "data": data or {},
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notifications.insert_one(notification)
+    return notification
+
+# ============== RANKS ENDPOINTS ==============
+
+@api_router.get("/ranks/all")
+async def get_all_ranks():
+    """Get all available ranks"""
+    return {"ranks": RANKS}
+
+@api_router.get("/ranks/next")
+async def get_next_rank(user: dict = Depends(get_current_user)):
+    """Get information about next rank"""
+    current_rank = await get_user_rank(user["user_id"])
+    
+    # Find next rank
+    current_index = next((i for i, r in enumerate(RANKS) if r["rank_id"] == current_rank["rank_id"]), 0)
+    
+    if current_index < len(RANKS) - 1:
+        next_rank = RANKS[current_index + 1]
+        elo_needed = next_rank["min_elo"] - user.get("elo_rating", 1200)
+        problems_needed = next_rank["min_problems"] - user.get("problems_solved", 0)
+        
+        return {
+            "current_rank": current_rank,
+            "next_rank": next_rank,
+            "requirements": {
+                "elo_needed": max(0, elo_needed),
+                "problems_needed": max(0, problems_needed)
+            },
+            "progress": {
+                "elo_progress": min(100, (user.get("elo_rating", 1200) / next_rank["min_elo"]) * 100),
+                "problems_progress": min(100, (user.get("problems_solved", 0) / next_rank["min_problems"]) * 100)
+            }
+        }
+    else:
+        return {
+            "current_rank": current_rank,
+            "next_rank": None,
+            "message": "You've reached the highest rank!"
+        }
+
 # ============== MAIN ==============
 
 app.include_router(api_router)
