@@ -204,7 +204,7 @@ export const DailyChallenges = ({ token }) => {
                       </Badge>
                     )}
                     
-                    {!challenge.completed && challenge.type === "solve_problem" && challenge.problem_id && (
+                    {!challenge.completed && challenge.problem_id && (
                       <Link to={`/problem/${challenge.problem_id}`}>
                         <Button
                           size="sm"
