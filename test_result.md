@@ -149,10 +149,10 @@ backend:
   - task: "Submissions and Code Checking"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/backend/server.py, /app/backend/code_validator.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
@@ -163,6 +163,39 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ CRITICAL FIXES VERIFIED: 1) Empty code validation working - rejects code <10 chars with proper error message. 2) One-time solve logic working - prevents solving same problem twice, correctly updates ELO only once. 3) Problem status endpoint working - shows is_solved: true/false correctly. All critical fixes are functional."
+      - working: true
+        agent: "main"
+        comment: "MAJOR UPGRADE: Полностью переработана система проверки кода! Теперь реальная компиляция и выполнение:
+          
+          **Solidity валидация:**
+          - Реальная компиляция через solc компилятор
+          - Deployment контрактов в тестовую EVM (py-evm)
+          - Выполнение тестов: function calls, transactions, state checks, events, reverts
+          - Детальная обработка ошибок компиляции и выполнения
+          - Проверка газа
+          
+          **Rust/Solana валидация:**
+          - Реальная компиляция через rustc
+          - Проверка TODO маркеров
+          - Timeout защита
+          - Fallback на pattern matching если компилятор недоступен
+          
+          **FunC/TON валидация:**
+          - Попытка компиляции через func compiler
+          - Проверка TODO маркеров
+          - Fallback на pattern matching
+          
+          **Улучшенный формат test_cases:**
+          - Структурированный JSON формат
+          - Типы тестов: call, transaction, state, event, revert
+          - Детальные результаты каждого теста
+          
+          **Результаты тестирования:**
+          - ✅ Код с синтаксическими ошибками - отклоняется на этапе компиляции
+          - ✅ Код с неправильной логикой - проваливает тесты выполнения
+          - ✅ Правильный код - проходит все тесты
+          
+          Система больше не принимает любой код - только правильные решения!"
 
   - task: "Leaderboard System"
     implemented: true
