@@ -70,6 +70,17 @@ class CodeValidator:
         test_results = []
         total_gas = 0
         
+        # Check if compiler is available
+        if not compile_source:
+            return False, [{
+                "test_id": 0,
+                "input": "Compilation",
+                "expected": "Success",
+                "passed": False,
+                "gas_used": 0,
+                "error": "Solidity compiler not available"
+            }], 0, "Compiler not available"
+        
         # Step 1: Syntax and compilation check
         try:
             compiled = compile_source(
