@@ -158,18 +158,53 @@ contract SimpleToken {
                 "description": "Should have correct name"
             },
             {
+                "type": "call",
+                "function": "totalSupply",
+                "args": [],
+                "expected": "0",
+                "description": "Initial total supply should be 0"
+            },
+            {
                 "type": "transaction",
                 "function": "mint",
                 "args": ["0x1234567890123456789012345678901234567890", 1000],
                 "expected": "success",
-                "description": "Mint 1000 tokens"
+                "description": "Mint 1000 tokens to address"
             },
             {
                 "type": "call",
                 "function": "totalSupply",
                 "args": [],
                 "expected": "1000",
-                "description": "Total supply should be 1000"
+                "description": "Total supply should be 1000 after mint"
+            },
+            {
+                "type": "call",
+                "function": "balanceOf",
+                "args": ["0x1234567890123456789012345678901234567890"],
+                "expected": "1000",
+                "description": "Balance should be 1000"
+            },
+            {
+                "type": "transaction",
+                "function": "mint",
+                "args": ["0x1234567890123456789012345678901234567890", 500],
+                "expected": "success",
+                "description": "Mint additional 500 tokens"
+            },
+            {
+                "type": "call",
+                "function": "totalSupply",
+                "args": [],
+                "expected": "1500",
+                "description": "Total supply should be 1500 after second mint"
+            },
+            {
+                "type": "call",
+                "function": "balanceOf",
+                "args": ["0x1234567890123456789012345678901234567890"],
+                "expected": "1500",
+                "description": "Balance should be 1500 after second mint"
             }
         ],
         "hints": [
