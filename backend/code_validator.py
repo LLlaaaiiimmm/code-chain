@@ -1399,7 +1399,7 @@ class CodeValidator:
                     # Code should NOT have hardcoded return of this specific value
                     # But should use storage and parameters
                     if int(value) > 50:  # Only check for non-trivial values
-                        hardcode_pattern = rf'return\s+{value}\s*;'
+                        hardcode_pattern = rf'return\s+{re.escape(value)}\s*;'
                         if re.search(hardcode_pattern, code):
                             test_results.append({
                                 "test_id": len(test_results) + 1,
