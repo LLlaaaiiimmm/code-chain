@@ -619,7 +619,7 @@ pub struct TransferTokens<'info> {
         "solved_count": 312
     },
     {
-        "problem_id": "rust_003",
+        "problem_id": "rust_005",
         "title": "Solana Staking Pool",
         "description": """Create a staking program where users can stake tokens and earn rewards.
 
@@ -680,7 +680,7 @@ pub struct PoolAccount {
         "solved_count": 145
     },
     {
-        "problem_id": "rust_004",
+        "problem_id": "rust_006",
         "title": "Solana NFT Marketplace",
         "description": """Build an NFT marketplace with listing, buying, and royalty features.
 
