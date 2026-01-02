@@ -355,7 +355,8 @@ contract HelloBlockchain {
         self.log("🔧 TEST 3: Compilation Error Handling", "TEST")
         
         # Register and login different test user
-        user_data = self.register_user("testuser3@test.com", "Test123!", "Test User 3")
+        timestamp = str(int(time.time()))
+        user_data = self.register_user(f"testuser3_{timestamp}@test.com", "Test123!", "Test User 3")
         if not user_data:
             return False
             
