@@ -1347,6 +1347,21 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         "recent_achievements": recent_achievements_full
     }
 
+
+@api_router.get("/stats/rank")
+async def get_user_rank_info(user: dict = Depends(get_current_user)):
+    """Get detailed rank information for the current user"""
+    rank_info = await get_rank_progress(user["user_id"])
+    return rank_info
+
+@api_router.get("/ranks/all")
+async def get_all_ranks():
+    """Get all available ranks in the system"""
+    return {
+        "ranks": RANKS,
+        "total_ranks": len(RANKS)
+    }
+
 @api_router.get("/stats/global")
 async def get_global_stats():
     total_users = await db.users.count_documents({})
