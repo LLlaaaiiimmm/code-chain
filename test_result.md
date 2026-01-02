@@ -152,7 +152,7 @@ backend:
     file: "/app/backend/server.py, /app/backend/code_validator.py, /app/backend/seed_problems.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
