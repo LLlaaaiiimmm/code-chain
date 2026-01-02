@@ -843,7 +843,7 @@ class CodeValidator:
                     value = import_match.group(1)
                     # Code should NOT have hardcoded return of this specific value
                     # Instead it should use the parameter
-                    hardcode_pattern = rf'return\s+{value}\s*;'
+                    hardcode_pattern = rf'return\s+{re.escape(value)}\s*;'
                     if re.search(hardcode_pattern, code):
                         test_results.append({
                             "test_id": len(test_results) + 1,
