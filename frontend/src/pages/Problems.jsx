@@ -51,8 +51,10 @@ const Problems = ({ user, token, onLogout }) => {
       if (search) params.append("search", search);
 
       const response = await axios.get(`${API}/problems?${params.toString()}`);
-      setProblems(response.data.problems);
-      setTotal(response.data.total);
+      // Filter out problems with 0 solved count
+      const filteredProblems = response.data.problems.filter(p => p.solved_count > 0);
+      setProblems(filteredProblems);
+      setTotal(filteredProblems.length);
     } catch (error) {
       console.error("Error fetching problems:", error);
     } finally {
