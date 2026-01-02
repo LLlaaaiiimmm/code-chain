@@ -759,6 +759,73 @@ async def get_user_rank(user_id: str) -> dict:
     
     return current_rank
 
+async def get_rank_progress(user_id: str) -> dict:
+    """Get detailed rank information with progress to next rank"""
+    user = await db.users.find_one({"user_id": user_id})
+    if not user:
+        return {
+            "current_rank": RANKS[0],
+            "next_rank": RANKS[1] if len(RANKS) > 1 else None,
+            "progress": {"elo": 0, "problems": 0, "overall": 0},
+            "requirements": {"elo": 0, "problems": 0}
+        }
+    
+    elo = user.get("elo_rating", 0)
+    problems = user.get("problems_solved", 0)
+    
+    # Find current rank
+    current_rank = RANKS[0]
+    current_rank_index = 0
+    for i, rank in enumerate(RANKS):
+        if elo >= rank["min_elo"] and problems >= rank["min_problems"]:
+            current_rank = rank
+            current_rank_index = i
+    
+    # Find next rank
+    next_rank = None
+    if current_rank_index < len(RANKS) - 1:
+        next_rank = RANKS[current_rank_index + 1]
+    
+    # Calculate progress to next rank
+    progress = {
+        "elo": 100,
+        "problems": 100,
+        "overall": 100
+    }
+    requirements = {
+        "elo": 0,
+        "problems": 0
+    }
+    
+    if next_rank:
+        # ELO progress
+        elo_needed = next_rank["min_elo"] - current_rank["min_elo"]
+        elo_current = elo - current_rank["min_elo"]
+        progress["elo"] = min(100, (elo_current / elo_needed * 100) if elo_needed > 0 else 100)
+        
+        # Problems progress
+        problems_needed = next_rank["min_problems"] - current_rank["min_problems"]
+        problems_current = problems - current_rank["min_problems"]
+        progress["problems"] = min(100, (problems_current / problems_needed * 100) if problems_needed > 0 else 100)
+        
+        # Overall progress (average)
+        progress["overall"] = (progress["elo"] + progress["problems"]) / 2
+        
+        # Requirements left
+        requirements["elo"] = max(0, next_rank["min_elo"] - elo)
+        requirements["problems"] = max(0, next_rank["min_problems"] - problems)
+    
+    return {
+        "current_rank": current_rank,
+        "next_rank": next_rank,
+        "progress": progress,
+        "requirements": requirements,
+        "current_stats": {
+            "elo": elo,
+            "problems": problems
+        }
+    }
+
 async def record_daily_activity(user_id: str, problems_solved: int = 0, elo_gained: int = 0):
     """Record user's daily activity"""
     today = datetime.now(timezone.utc).date().isoformat()
