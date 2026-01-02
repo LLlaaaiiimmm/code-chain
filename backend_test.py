@@ -438,8 +438,13 @@ contract HelloBlockchain {
         """Test 4: Empty code validation"""
         self.log("🔧 TEST 4: Empty Code Validation", "TEST")
         
-        # Use existing user token (reuse testuser1)
-        token = self.login_user("testuser1@test.com", "Test123!")
+        # Register a new user for this test
+        timestamp = str(int(time.time()))
+        user_data = self.register_user(f"testuser4_{timestamp}@test.com", "Test123!", "Test User 4")
+        if not user_data:
+            return False
+            
+        token = user_data.get("token")
         if not token:
             return False
         
