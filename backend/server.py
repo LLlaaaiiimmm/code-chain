@@ -469,14 +469,86 @@ ACHIEVEMENTS_LIST = [
     }
 ]
 
-# Rank system
+# Enhanced Rank System with detailed progression
 RANKS = [
-    {"rank_id": "newbie", "name": "Newbie", "min_elo": 0, "min_problems": 0, "icon": "🌱", "color": "#94a3b8"},
-    {"rank_id": "junior", "name": "Junior Developer", "min_elo": 1200, "min_problems": 5, "icon": "👨‍💻", "color": "#22c55e"},
-    {"rank_id": "middle", "name": "Middle Developer", "min_elo": 1400, "min_problems": 20, "icon": "⚡", "color": "#eab308"},
-    {"rank_id": "senior", "name": "Senior Developer", "min_elo": 1600, "min_problems": 50, "icon": "🔥", "color": "#f97316"},
-    {"rank_id": "expert", "name": "Expert", "min_elo": 1800, "min_problems": 100, "icon": "💎", "color": "#a855f7"},
-    {"rank_id": "architect", "name": "Blockchain Architect", "min_elo": 2000, "min_problems": 200, "icon": "👑", "color": "#fbbf24"}
+    {
+        "rank_id": "newbie",
+        "name": "Newbie",
+        "min_elo": 0,
+        "max_elo": 1199,
+        "min_problems": 0,
+        "max_problems": 4,
+        "icon": "🌱",
+        "color": "#94a3b8",
+        "description": "Just starting your blockchain journey",
+        "benefits": ["Access to Junior problems", "Basic learning resources"],
+        "next_rank_hint": "Solve 5 problems and reach 1200 ELO to become Junior Developer"
+    },
+    {
+        "rank_id": "junior",
+        "name": "Junior Developer",
+        "min_elo": 1200,
+        "max_elo": 1399,
+        "min_problems": 5,
+        "max_problems": 19,
+        "icon": "👨‍💻",
+        "color": "#22c55e",
+        "description": "Learning fundamentals of blockchain development",
+        "benefits": ["Access to Junior & Middle problems", "Code review tools", "Community forums"],
+        "next_rank_hint": "Solve 20 problems and reach 1400 ELO to advance to Middle Developer"
+    },
+    {
+        "rank_id": "middle",
+        "name": "Middle Developer",
+        "min_elo": 1400,
+        "max_elo": 1599,
+        "min_problems": 20,
+        "max_problems": 49,
+        "icon": "⚡",
+        "color": "#eab308",
+        "description": "Mastering smart contract patterns and security",
+        "benefits": ["Access to Senior problems", "Advanced debugging tools", "Priority support"],
+        "next_rank_hint": "Solve 50 problems and reach 1600 ELO to become Senior Developer"
+    },
+    {
+        "rank_id": "senior",
+        "name": "Senior Developer",
+        "min_elo": 1600,
+        "max_elo": 1799,
+        "min_problems": 50,
+        "max_problems": 99,
+        "icon": "🔥",
+        "color": "#f97316",
+        "description": "Expert in DeFi protocols and complex systems",
+        "benefits": ["Access to Expert problems", "Gas optimization insights", "Exclusive hackathons"],
+        "next_rank_hint": "Solve 100 problems and reach 1800 ELO to become an Expert"
+    },
+    {
+        "rank_id": "expert",
+        "name": "Expert",
+        "min_elo": 1800,
+        "max_elo": 1999,
+        "min_problems": 100,
+        "max_problems": 199,
+        "icon": "💎",
+        "color": "#a855f7",
+        "description": "Top-tier developer with deep expertise",
+        "benefits": ["All problem access", "NFT certificates", "Mentorship opportunities", "Job board access"],
+        "next_rank_hint": "Solve 200 problems and reach 2000 ELO to become Blockchain Architect"
+    },
+    {
+        "rank_id": "architect",
+        "name": "Blockchain Architect",
+        "min_elo": 2000,
+        "max_elo": 9999,
+        "min_problems": 200,
+        "max_problems": 999999,
+        "icon": "👑",
+        "color": "#fbbf24",
+        "description": "Elite blockchain architect - you've mastered the craft",
+        "benefits": ["Legendary status", "Create custom problems", "Exclusive events", "Platform recognition"],
+        "next_rank_hint": "You've reached the pinnacle! Keep solving to maintain your status."
+    }
 ]
 
 async def check_and_unlock_achievements(user_id: str):
