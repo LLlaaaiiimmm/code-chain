@@ -1152,6 +1152,65 @@ async def get_problem_submissions(problem_id: str, user: dict = Depends(get_curr
     ).sort("created_at", -1).to_list(50)
     return submissions
 
+
+@api_router.delete("/submissions/solved")
+async def delete_solved_submissions(user: dict = Depends(get_current_user)):
+    """Delete all solved submissions and revert user stats"""
+    
+    # Get all passed submissions for this user
+    solved_submissions = await db.submissions.find({
+        "user_id": user["user_id"],
+        "status": "passed"
+    }).to_list(None)
+    
+    if not solved_submissions:
+        return {
+            "message": "No solved submissions to delete",
+            "deleted_count": 0,
+            "elo_reverted": 0,
+            "problems_reverted": 0
+        }
+    
+    # Calculate total ELO and problems to revert
+    total_elo_to_revert = sum(sub.get("elo_change", 0) for sub in solved_submissions)
+    problems_to_revert = len(solved_submissions)
+    
+    # Get unique problem IDs
+    unique_problem_ids = list(set(sub["problem_id"] for sub in solved_submissions))
+    
+    # Delete all solved submissions
+    delete_result = await db.submissions.delete_many({
+        "user_id": user["user_id"],
+        "status": "passed"
+    })
+    
+    # Revert user stats
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {
+            "$inc": {
+                "elo_rating": -total_elo_to_revert,
+                "problems_solved": -problems_to_revert
+            }
+        }
+    )
+    
+    # Decrease solved_count for each problem
+    for problem_id in unique_problem_ids:
+        await db.problems.update_one(
+            {"problem_id": problem_id},
+            {"$inc": {"solved_count": -1}}
+        )
+    
+    return {
+        "message": "All solved submissions deleted successfully",
+        "deleted_count": delete_result.deleted_count,
+        "elo_reverted": total_elo_to_revert,
+        "problems_reverted": problems_to_revert,
+        "affected_problems": len(unique_problem_ids)
+    }
+
+
 # ============== LEADERBOARD ENDPOINTS ==============
 
 @api_router.get("/leaderboard")
