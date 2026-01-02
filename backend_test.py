@@ -469,9 +469,10 @@ contract HelloBlockchain {
         """Test 5: Prevent solving same problem twice"""
         self.log("🔧 TEST 5: Duplicate Submission Prevention", "TEST")
         
-        # Use existing user who already solved sol_001
-        token = self.login_user("testuser1@test.com", "Test123!")
+        # Use token from test 1 if available, otherwise skip
+        token = self.user_tokens.get('test1_user')
         if not token:
+            self.log("❌ No token from test 1 available, skipping duplicate test", "ERROR")
             return False
         
         # Try to submit solution again
