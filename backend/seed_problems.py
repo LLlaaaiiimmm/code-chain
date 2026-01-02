@@ -2141,11 +2141,29 @@ contract Antifrontrunning {
 }""",
         "test_cases": [
             {
+                "type": "call",
+                "function": "getCommitmentHash",
+                "args": [1000, "0x" + "01" * 32],
+                "expected": "not_empty",
+                "description": "Should return commitment hash for value and salt"
+            },
+            {
                 "type": "transaction",
                 "function": "commit",
                 "args": ["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"],
                 "expected": "success",
-                "description": "Should commit hash"
+                "description": "Should commit hash successfully"
+            },
+            {
+                "type": "state",
+                "variable": "commitments",
+                "function": "commitments",
+                "args": ["<deployer>"],
+                "expected": {
+                    "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                    "revealed": False
+                },
+                "description": "Should store commitment with hash and revealed=false"
             }
         ],
         "hints": [
