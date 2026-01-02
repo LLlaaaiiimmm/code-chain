@@ -1,95 +1,205 @@
 [
   {
     "test": "User Registration",
-    "success": false,
-    "message": "Registration failed: 520",
+    "success": true,
+    "message": "Successfully registered test user",
     "details": {
-      "response": "Web server returned an unknown error\n"
+      "user_id": "user_260c33503a85",
+      "email": "testuser_91d7bb4d@example.com"
     },
-    "timestamp": "2026-01-02T11:49:47.582800"
+    "timestamp": "2026-01-02T11:51:12.663248"
   },
   {
     "test": "Expert User Creation",
-    "success": false,
-    "message": "Expert registration failed: 520",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.595110"
+    "success": true,
+    "message": "Successfully created expert user",
+    "details": {
+      "user_id": "user_f10f72960c91",
+      "email": "expert_9b88a94a@example.com",
+      "subscription": "expert"
+    },
+    "timestamp": "2026-01-02T11:51:12.919904"
   },
   {
     "test": "Get Problems",
-    "success": false,
-    "message": "Failed to get problems: 520",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.650477"
+    "success": true,
+    "message": "Retrieved 50 problems",
+    "details": {
+      "total_problems": 50,
+      "test_problem_id": "sol_001"
+    },
+    "timestamp": "2026-01-02T11:51:12.939610"
   },
   {
     "test": "Authentication Endpoints",
-    "success": false,
-    "message": "Missing test user token",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.650504"
+    "success": true,
+    "message": "Authentication working correctly",
+    "details": {
+      "user_id": "user_260c33503a85",
+      "email": "testuser_91d7bb4d@example.com",
+      "elo_rating": 1200
+    },
+    "timestamp": "2026-01-02T11:51:12.950214"
   },
   {
-    "test": "Empty Code Validation",
-    "success": false,
-    "message": "Missing test user token or problem ID",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.650511"
+    "test": "Empty Code Validation - Empty",
+    "success": true,
+    "message": "Correctly rejected empty code",
+    "details": {
+      "status_code": 400,
+      "error_message": "Code is too short. Please write a meaningful solution (minimum 10 characters)."
+    },
+    "timestamp": "2026-01-02T11:51:12.960809"
   },
   {
-    "test": "One-Time Solve Logic",
-    "success": false,
-    "message": "Missing test user token or problem ID",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.650524"
+    "test": "Empty Code Validation - Short",
+    "success": true,
+    "message": "Correctly rejected short code",
+    "details": {
+      "status_code": 400,
+      "error_message": "Code is too short. Please write a meaningful solution (minimum 10 characters).",
+      "code_length": 5
+    },
+    "timestamp": "2026-01-02T11:51:13.014967"
   },
   {
-    "test": "Problem Status Check",
+    "test": "One-Time Solve Logic - First Submit",
     "success": false,
-    "message": "Missing test user token or problem ID",
+    "message": "First submission failed: failed",
     "details": {},
-    "timestamp": "2026-01-02T11:49:47.650530"
+    "timestamp": "2026-01-02T11:51:13.065438"
   },
   {
-    "test": "Certificate Minting Auth",
+    "test": "Problem Status Check - Solved",
     "success": false,
-    "message": "Missing expert user token",
+    "message": "Problem should be marked as solved: is_solved=False",
     "details": {},
-    "timestamp": "2026-01-02T11:49:47.650537"
+    "timestamp": "2026-01-02T11:51:13.081141"
+  },
+  {
+    "test": "Certificate Minting Auth - Expert",
+    "success": true,
+    "message": "Expert user needs higher rating (expected)",
+    "details": {
+      "error": "Need at least 2000 ELO rating"
+    },
+    "timestamp": "2026-01-02T11:51:13.131353"
+  },
+  {
+    "test": "Certificate Minting Auth - Basic",
+    "success": true,
+    "message": "Basic user correctly denied",
+    "details": {
+      "status_code": 403,
+      "error_message": "Expert subscription required for NFT certificates"
+    },
+    "timestamp": "2026-01-02T11:51:13.142863"
   },
   {
     "test": "Rank System Dashboard",
-    "success": false,
-    "message": "Missing test user token",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.650543"
+    "success": true,
+    "message": "Dashboard rank data structure is correct",
+    "details": {
+      "current_rank": "Newbie",
+      "rank_id": "newbie",
+      "elo_progress": 100,
+      "problems_progress": 0.0,
+      "overall_progress": 50.0,
+      "next_rank": "Junior Developer"
+    },
+    "timestamp": "2026-01-02T11:51:13.154809"
   },
   {
     "test": "Rank System Detailed",
-    "success": false,
-    "message": "Missing test user token",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.650549"
+    "success": true,
+    "message": "Detailed rank information is correct",
+    "details": {
+      "current_rank": "Newbie",
+      "current_elo": 1200,
+      "current_problems": 0,
+      "next_rank": "Junior Developer"
+    },
+    "timestamp": "2026-01-02T11:51:13.166085"
   },
   {
     "test": "All Ranks Endpoint",
-    "success": false,
-    "message": "All ranks request failed: 520",
-    "details": {},
-    "timestamp": "2026-01-02T11:49:47.663149"
+    "success": true,
+    "message": "All ranks endpoint working correctly",
+    "details": {
+      "total_ranks": 6,
+      "rank_names": [
+        "Newbie",
+        "Junior Developer",
+        "Middle Developer",
+        "Senior Developer",
+        "Expert",
+        "Blockchain Architect"
+      ]
+    },
+    "timestamp": "2026-01-02T11:51:13.176932"
   },
   {
     "test": "Rank Progress Calculation",
-    "success": false,
-    "message": "Missing test user token",
+    "success": true,
+    "message": "Rank progress calculation is correct",
+    "details": {
+      "user_elo": 1200,
+      "user_problems": 0,
+      "current_rank": "Newbie",
+      "elo_progress": 100,
+      "problems_progress": 0.0,
+      "overall_progress": 50.0
+    },
+    "timestamp": "2026-01-02T11:51:13.239998"
+  },
+  {
+    "test": "Delete Solved Submissions - Initial Stats",
+    "success": true,
+    "message": "Got initial user stats",
+    "details": {
+      "initial_elo": 1200,
+      "initial_problems_solved": 0
+    },
+    "timestamp": "2026-01-02T11:51:13.259356"
+  },
+  {
+    "test": "Delete Solved Submissions - Setup",
+    "success": true,
+    "message": "No solved problems found, creating some...",
     "details": {},
-    "timestamp": "2026-01-02T11:49:47.663164"
+    "timestamp": "2026-01-02T11:51:13.272175"
+  },
+  {
+    "test": "Delete Solved Submissions - Setup Problem 1",
+    "success": false,
+    "message": "Problem solution failed: failed",
+    "details": {},
+    "timestamp": "2026-01-02T11:51:13.304237"
+  },
+  {
+    "test": "Delete Solved Submissions - Setup Problem 2",
+    "success": false,
+    "message": "Problem solution failed: failed",
+    "details": {},
+    "timestamp": "2026-01-02T11:51:13.318260"
+  },
+  {
+    "test": "Delete Solved Submissions - Updated Stats",
+    "success": true,
+    "message": "Got updated user stats after solving",
+    "details": {
+      "updated_elo": 1200,
+      "updated_problems_solved": 0,
+      "elo_gained": 0,
+      "problems_gained": 0
+    },
+    "timestamp": "2026-01-02T11:51:13.336717"
   },
   {
     "test": "Delete Solved Submissions",
     "success": false,
-    "message": "Missing test user token",
+    "message": "No solved problems available for deletion test",
     "details": {},
-    "timestamp": "2026-01-02T11:49:47.663170"
+    "timestamp": "2026-01-02T11:51:13.336741"
   }
 ]
