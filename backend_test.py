@@ -475,6 +475,291 @@ class CodeChainTester:
         except Exception as e:
             await self.log_result("Certificate Minting Auth", False, f"Error testing certificate minting: {str(e)}")
             return False
+
+    async def test_rank_system_dashboard(self):
+        """Test /api/stats/dashboard endpoint for rank system data"""
+        if not self.test_user_token:
+            await self.log_result("Rank System Dashboard", False, "Missing test user token")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        
+        try:
+            response = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check for required rank fields
+                required_fields = ["current_rank", "rank_progress", "rank_requirements"]
+                missing_fields = []
+                
+                for field in required_fields:
+                    if field not in data:
+                        missing_fields.append(field)
+                
+                if missing_fields:
+                    await self.log_result("Rank System Dashboard", False, f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate current_rank structure
+                current_rank = data.get("current_rank", {})
+                rank_fields = ["rank_id", "name", "min_elo", "max_elo", "min_problems", "max_problems", "icon", "color", "description", "benefits"]
+                missing_rank_fields = []
+                
+                for field in rank_fields:
+                    if field not in current_rank:
+                        missing_rank_fields.append(field)
+                
+                if missing_rank_fields:
+                    await self.log_result("Rank System Dashboard", False, f"Missing current_rank fields: {missing_rank_fields}")
+                    return False
+                
+                # Validate rank_progress structure
+                rank_progress = data.get("rank_progress", {})
+                progress_fields = ["elo", "problems", "overall"]
+                missing_progress_fields = []
+                
+                for field in progress_fields:
+                    if field not in rank_progress:
+                        missing_progress_fields.append(field)
+                
+                if missing_progress_fields:
+                    await self.log_result("Rank System Dashboard", False, f"Missing rank_progress fields: {missing_progress_fields}")
+                    return False
+                
+                # Validate progress values are between 0 and 100
+                for field in progress_fields:
+                    value = rank_progress.get(field, -1)
+                    if not (0 <= value <= 100):
+                        await self.log_result("Rank System Dashboard", False, f"Invalid progress value for {field}: {value} (should be 0-100)")
+                        return False
+                
+                # Validate rank_requirements structure
+                rank_requirements = data.get("rank_requirements", {})
+                req_fields = ["elo", "problems"]
+                missing_req_fields = []
+                
+                for field in req_fields:
+                    if field not in rank_requirements:
+                        missing_req_fields.append(field)
+                
+                if missing_req_fields:
+                    await self.log_result("Rank System Dashboard", False, f"Missing rank_requirements fields: {missing_req_fields}")
+                    return False
+                
+                # Check if next_rank exists (can be null for max rank)
+                next_rank = data.get("next_rank")
+                if next_rank is not None:
+                    # If next_rank exists, validate its structure
+                    for field in rank_fields:
+                        if field not in next_rank:
+                            await self.log_result("Rank System Dashboard", False, f"Missing next_rank field: {field}")
+                            return False
+                
+                await self.log_result("Rank System Dashboard", True, "Dashboard rank data structure is correct", {
+                    "current_rank": current_rank.get("name"),
+                    "rank_id": current_rank.get("rank_id"),
+                    "elo_progress": rank_progress.get("elo"),
+                    "problems_progress": rank_progress.get("problems"),
+                    "overall_progress": rank_progress.get("overall"),
+                    "next_rank": next_rank.get("name") if next_rank else "Max rank reached"
+                })
+                return True
+            else:
+                await self.log_result("Rank System Dashboard", False, f"Dashboard request failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            await self.log_result("Rank System Dashboard", False, f"Error testing dashboard: {str(e)}")
+            return False
+
+    async def test_rank_system_detailed(self):
+        """Test /api/stats/rank endpoint for detailed rank information"""
+        if not self.test_user_token:
+            await self.log_result("Rank System Detailed", False, "Missing test user token")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        
+        try:
+            response = await self.client.get(f"{API_BASE}/stats/rank", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check for required fields
+                required_fields = ["current_rank", "progress", "requirements", "current_stats"]
+                missing_fields = []
+                
+                for field in required_fields:
+                    if field not in data:
+                        missing_fields.append(field)
+                
+                if missing_fields:
+                    await self.log_result("Rank System Detailed", False, f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate current_stats
+                current_stats = data.get("current_stats", {})
+                if "elo" not in current_stats or "problems" not in current_stats:
+                    await self.log_result("Rank System Detailed", False, "Missing current_stats fields (elo, problems)")
+                    return False
+                
+                await self.log_result("Rank System Detailed", True, "Detailed rank information is correct", {
+                    "current_rank": data.get("current_rank", {}).get("name"),
+                    "current_elo": current_stats.get("elo"),
+                    "current_problems": current_stats.get("problems"),
+                    "next_rank": data.get("next_rank", {}).get("name") if data.get("next_rank") else "Max rank"
+                })
+                return True
+            else:
+                await self.log_result("Rank System Detailed", False, f"Detailed rank request failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            await self.log_result("Rank System Detailed", False, f"Error testing detailed rank: {str(e)}")
+            return False
+
+    async def test_all_ranks_endpoint(self):
+        """Test /api/ranks/all endpoint for all ranks list"""
+        try:
+            response = await self.client.get(f"{API_BASE}/ranks/all")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check for required fields
+                if "ranks" not in data or "total_ranks" not in data:
+                    await self.log_result("All Ranks Endpoint", False, "Missing required fields (ranks, total_ranks)")
+                    return False
+                
+                ranks = data.get("ranks", [])
+                total_ranks = data.get("total_ranks", 0)
+                
+                # Should have 6 ranks as per the review request
+                if total_ranks != 6:
+                    await self.log_result("All Ranks Endpoint", False, f"Expected 6 ranks, got {total_ranks}")
+                    return False
+                
+                if len(ranks) != 6:
+                    await self.log_result("All Ranks Endpoint", False, f"Expected 6 ranks in array, got {len(ranks)}")
+                    return False
+                
+                # Validate each rank structure
+                rank_fields = ["rank_id", "name", "min_elo", "max_elo", "min_problems", "max_problems", "icon", "color", "description", "benefits"]
+                
+                for i, rank in enumerate(ranks):
+                    missing_fields = []
+                    for field in rank_fields:
+                        if field not in rank:
+                            missing_fields.append(field)
+                    
+                    if missing_fields:
+                        await self.log_result("All Ranks Endpoint", False, f"Rank {i+1} missing fields: {missing_fields}")
+                        return False
+                
+                # Check rank names (should be the 6 expected ranks)
+                expected_ranks = ["Newbie", "Junior Developer", "Middle Developer", "Senior Developer", "Expert", "Blockchain Architect"]
+                actual_rank_names = [rank.get("name") for rank in ranks]
+                
+                for expected_name in expected_ranks:
+                    if expected_name not in actual_rank_names:
+                        await self.log_result("All Ranks Endpoint", False, f"Missing expected rank: {expected_name}")
+                        return False
+                
+                await self.log_result("All Ranks Endpoint", True, "All ranks endpoint working correctly", {
+                    "total_ranks": total_ranks,
+                    "rank_names": actual_rank_names
+                })
+                return True
+            else:
+                await self.log_result("All Ranks Endpoint", False, f"All ranks request failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            await self.log_result("All Ranks Endpoint", False, f"Error testing all ranks: {str(e)}")
+            return False
+
+    async def test_rank_progress_calculation(self):
+        """Test that rank progress calculation is correct"""
+        if not self.test_user_token:
+            await self.log_result("Rank Progress Calculation", False, "Missing test user token")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        
+        try:
+            # Get user stats
+            user_response = await self.client.get(f"{API_BASE}/auth/me", headers=headers)
+            if user_response.status_code != 200:
+                await self.log_result("Rank Progress Calculation", False, "Failed to get user stats")
+                return False
+            
+            user_data = user_response.json()
+            user_elo = user_data.get("elo_rating", 1200)
+            user_problems = user_data.get("problems_solved", 0)
+            
+            # Get rank progress
+            rank_response = await self.client.get(f"{API_BASE}/stats/rank", headers=headers)
+            if rank_response.status_code != 200:
+                await self.log_result("Rank Progress Calculation", False, "Failed to get rank progress")
+                return False
+            
+            rank_data = rank_response.json()
+            current_rank = rank_data.get("current_rank", {})
+            next_rank = rank_data.get("next_rank")
+            progress = rank_data.get("progress", {})
+            requirements = rank_data.get("requirements", {})
+            
+            # Validate progress calculation logic
+            if next_rank:
+                # Calculate expected ELO progress
+                elo_range = next_rank.get("min_elo", 0) - current_rank.get("min_elo", 0)
+                elo_current = user_elo - current_rank.get("min_elo", 0)
+                expected_elo_progress = min(100, (elo_current / elo_range * 100) if elo_range > 0 else 100)
+                
+                # Calculate expected problems progress
+                problems_range = next_rank.get("min_problems", 0) - current_rank.get("min_problems", 0)
+                problems_current = user_problems - current_rank.get("min_problems", 0)
+                expected_problems_progress = min(100, (problems_current / problems_range * 100) if problems_range > 0 else 100)
+                
+                # Check if calculated progress matches
+                actual_elo_progress = progress.get("elo", 0)
+                actual_problems_progress = progress.get("problems", 0)
+                
+                # Allow small floating point differences
+                elo_diff = abs(expected_elo_progress - actual_elo_progress)
+                problems_diff = abs(expected_problems_progress - actual_problems_progress)
+                
+                if elo_diff > 1 or problems_diff > 1:
+                    await self.log_result("Rank Progress Calculation", False, f"Progress calculation mismatch - ELO: expected {expected_elo_progress:.1f}, got {actual_elo_progress:.1f}; Problems: expected {expected_problems_progress:.1f}, got {actual_problems_progress:.1f}")
+                    return False
+                
+                # Check requirements calculation
+                expected_elo_req = max(0, next_rank.get("min_elo", 0) - user_elo)
+                expected_problems_req = max(0, next_rank.get("min_problems", 0) - user_problems)
+                
+                actual_elo_req = requirements.get("elo", 0)
+                actual_problems_req = requirements.get("problems", 0)
+                
+                if expected_elo_req != actual_elo_req or expected_problems_req != actual_problems_req:
+                    await self.log_result("Rank Progress Calculation", False, f"Requirements calculation mismatch - ELO: expected {expected_elo_req}, got {actual_elo_req}; Problems: expected {expected_problems_req}, got {actual_problems_req}")
+                    return False
+            
+            await self.log_result("Rank Progress Calculation", True, "Rank progress calculation is correct", {
+                "user_elo": user_elo,
+                "user_problems": user_problems,
+                "current_rank": current_rank.get("name"),
+                "elo_progress": progress.get("elo"),
+                "problems_progress": progress.get("problems"),
+                "overall_progress": progress.get("overall")
+            })
+            return True
+            
+        except Exception as e:
+            await self.log_result("Rank Progress Calculation", False, f"Error testing progress calculation: {str(e)}")
+            return False
     
     async def test_authentication_endpoints(self):
         """Test authentication endpoints"""
