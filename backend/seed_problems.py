@@ -5005,7 +5005,7 @@ contract MEVProtection {
     # ============== ADDITIONAL RUST (SOLANA) PROBLEMS ==============
     # Junior Level
     {
-        "problem_id": "rust_003",
+        "problem_id": "rust_012",
         "title": "Solana Counter Program",
         "description": """Create a simple counter program on Solana.
 
@@ -5074,7 +5074,7 @@ pub struct Counter {
         "solved_count": 0
     },
     {
-        "problem_id": "rust_004",
+        "problem_id": "rust_013",
         "title": "Solana NFT Minter",
         "description": """Build an NFT minting program on Solana.
 
@@ -5131,7 +5131,7 @@ pub struct MintNFT<'info> {
         "solved_count": 0
     },
     {
-        "problem_id": "rust_005",
+        "problem_id": "rust_014",
         "title": "Solana Escrow Program",
         "description": """Create an escrow program for atomic swaps on Solana.
 
@@ -5210,7 +5210,7 @@ pub struct EscrowAccount {
 
     # Middle Level
     {
-        "problem_id": "rust_006",
+        "problem_id": "rust_015",
         "title": "Solana Token Staking",
         "description": """Implement a token staking program with rewards on Solana.
 
@@ -5287,7 +5287,7 @@ pub struct StakeAccount {
         "solved_count": 0
     },
     {
-        "problem_id": "rust_007",
+        "problem_id": "rust_016",
         "title": "Solana NFT Collection Manager",
         "description": """Build a program to manage NFT collections with minting controls.
 
@@ -5362,7 +5362,7 @@ pub struct CollectionAccount {
         "solved_count": 0
     },
     {
-        "problem_id": "rust_008",
+        "problem_id": "rust_017",
         "title": "Solana Voting DAO",
         "description": """Create a DAO governance program with proposal voting.
 
@@ -5448,7 +5448,7 @@ pub struct Proposal {
 
     # Senior Level
     {
-        "problem_id": "rust_009",
+        "problem_id": "rust_018",
         "title": "Serum DEX Integration",
         "description": """Integrate with Serum DEX for trading on Solana.
 
@@ -5528,7 +5528,7 @@ pub struct SettleFunds<'info> {
         "solved_count": 0
     },
     {
-        "problem_id": "rust_010",
+        "problem_id": "rust_019",
         "title": "Solana Token Vesting",
         "description": """Implement a token vesting program with linear release.
 
@@ -5612,7 +5612,7 @@ pub struct VestingAccount {
 
     # Expert Level
     {
-        "problem_id": "rust_011",
+        "problem_id": "rust_020",
         "title": "Solana Flash Loan Program",
         "description": """Build a flash loan program on Solana.
 
