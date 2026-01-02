@@ -1060,6 +1060,7 @@ class CodeChainTester:
             ("Rank System Detailed", self.test_rank_system_detailed),
             ("All Ranks Endpoint", self.test_all_ranks_endpoint),
             ("Rank Progress Calculation", self.test_rank_progress_calculation),
+            ("Delete Solved Submissions", self.test_delete_solved_submissions),
         ]
         
         passed = 0
