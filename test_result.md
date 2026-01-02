@@ -499,9 +499,6 @@ metadata:
 test_plan:
   current_focus:
     - "Submissions and Code Checking"
-    - "Problem Solver / Code Editor"
-    - "Problems Library UI"
-    - "NFT Certificates on Polygon"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
