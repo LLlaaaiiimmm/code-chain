@@ -19,7 +19,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Backend URL from environment
-BACKEND_URL = "https://compiler-fix.preview.emergentagent.com/api"
+BACKEND_URL = "https://code-challenge-fix-1.preview.emergentagent.com/api"
 
 class CodeChainTester:
     def __init__(self):
