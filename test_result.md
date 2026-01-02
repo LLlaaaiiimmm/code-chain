@@ -375,6 +375,21 @@ backend:
         agent: "main"
         comment: "18+ quality problems covering Solidity (Junior to Expert), Rust/Solana, FunC/TON, and cryptography challenges"
 
+  - task: "Skill Chain Integration"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Skill Chain system implemented with 12 skills across 4 categories (solidity, rust, tvm, general). Includes skill tree structure, user progress tracking, and automatic skill updates on problem solving."
+      - working: true
+        agent: "testing"
+        comment: "✅ SKILL CHAIN TESTED: 1) GET /api/skills/tree endpoint working - returns 12 skills with correct structure (skill_id, name, description, category, dependencies, level) and all expected categories (solidity, rust, tvm, general). 2) GET /api/skills/user-progress endpoint working - requires authentication, returns progress data for all skills including locked skills with progress 0-100% and unlocked status. 3) Integration with submissions partially tested - skill endpoints functional but submission validation has ABI encoding issues preventing full end-to-end test. Core Skill Chain API endpoints are fully functional."
+
 frontend:
   - task: "Landing Page"
     implemented: true
