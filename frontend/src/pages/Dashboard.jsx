@@ -29,7 +29,6 @@ import { API } from "../App";
 const Dashboard = ({ user, token, onLogout }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -65,30 +64,6 @@ const Dashboard = ({ user, token, onLogout }) => {
     ) : (
       <XCircle className="w-4 h-4 text-red-400" />
     );
-  };
-
-  const handleDeleteSolvedProblems = async () => {
-    if (!confirm("Вы уверены? Это удалит все ваши решенные задачи и вернет ELO назад. Это действие нельзя отменить!")) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      const response = await axios.delete(`${API}/submissions/solved`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true
-      });
-
-      alert(`Успешно удалено!\n- Задач: ${response.data.deleted_count}\n- ELO возвращено: ${response.data.elo_reverted}\n- Задач отменено: ${response.data.problems_reverted}`);
-      
-      // Refresh dashboard stats
-      await fetchDashboardStats();
-    } catch (error) {
-      console.error("Error deleting solved submissions:", error);
-      alert(error.response?.data?.detail || "Ошибка при удалении решенных задач");
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   if (loading) {
