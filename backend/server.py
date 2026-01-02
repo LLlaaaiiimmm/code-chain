@@ -1569,8 +1569,9 @@ contract FlashArbitrage {
         }
     ]
     
-    # Combine demo and comprehensive problems
-    all_problems = problems  # Use comprehensive set from seed_problems.py
+    # Use comprehensive problem set from seed_problems.py
+    # It already includes 83 quality problems across all categories
+    all_problems = problems
     
     # Clear and insert
     await db.problems.delete_many({})
