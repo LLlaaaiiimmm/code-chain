@@ -2393,6 +2393,1148 @@ contract PriceOracle {
         "tags": ["oracle", "price-feed", "defi", "advanced"],
         "solved_count": 0
     },
+    
+    # ============== NEW RUST/SOLANA PROBLEMS ==============
+    {
+        "problem_id": "rust_003",
+        "title": "Solana NFT Minting",
+        "description": """Create a Solana program for minting NFTs using Metaplex standard.
+
+Requirements:
+- Initialize NFT collection
+- Mint individual NFTs
+- Set metadata URI
+- Transfer NFTs
+- Track total supply""",
+        "difficulty": "middle",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Mint};
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod nft_minting {
+    use super::*;
+
+    // TODO: Implement initialize collection
+    pub fn initialize_collection(
+        ctx: Context<InitializeCollection>,
+        name: String,
+        symbol: String,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement mint NFT
+    pub fn mint_nft(
+        ctx: Context<MintNFT>,
+        uri: String,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializeCollection<'info> {
+    // TODO: Define accounts
+    #[account(init, payer = authority, space = 8 + 200)]
+    pub collection: Account<'info, Collection>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct MintNFT<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct Collection {
+    pub authority: Pubkey,
+    pub name: String,
+    pub symbol: String,
+    pub total_minted: u64,
+}
+
+#[account]
+pub struct NFTMetadata {
+    pub uri: String,
+    pub mint: Pubkey,
+}""",
+        "test_cases": [
+            {"input": "initialize_collection('CodeChain NFT', 'CCNFT')", "expected": "collection created"},
+            {"input": "mint_nft('ipfs://...')", "expected": "nft minted"}
+        ],
+        "hints": [
+            "Use Anchor's init constraint for account creation",
+            "Store collection authority as Pubkey",
+            "Increment total_minted counter",
+            "Use Token program for actual minting"
+        ],
+        "tags": ["solana", "nft", "metaplex", "anchor"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_004",
+        "title": "Solana Staking Program",
+        "description": """Implement a token staking program with time-locked rewards.
+
+Requirements:
+- Stake SPL tokens
+- Calculate rewards based on time
+- Unstake with rewards
+- Handle multiple stakers
+- Implement reward pool""",
+        "difficulty": "senior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount};
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod staking {
+    use super::*;
+
+    // TODO: Implement initialize pool
+    pub fn initialize_pool(ctx: Context<InitializePool>, reward_rate: u64) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement stake
+    pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
+        // Your code here
+        // Transfer tokens to pool
+        // Record stake timestamp
+        Ok(())
+    }
+
+    // TODO: Implement calculate rewards
+    pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<u64> {
+        // Your code here
+        // rewards = amount * time_staked * reward_rate / SECONDS_PER_YEAR
+        Ok(0)
+    }
+
+    // TODO: Implement unstake
+    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
+        // Your code here
+        // Calculate rewards
+        // Transfer stake + rewards back
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializePool<'info> {
+    #[account(init, payer = authority, space = 8 + 200)]
+    pub pool: Account<'info, StakingPool>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Stake<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, StakingPool>,
+    #[account(init_if_needed, payer = user, space = 8 + 200)]
+    pub stake_account: Account<'info, StakeAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct StakingPool {
+    pub authority: Pubkey,
+    pub reward_rate: u64,
+    pub total_staked: u64,
+}
+
+#[account]
+pub struct StakeAccount {
+    pub owner: Pubkey,
+    pub amount: u64,
+    pub stake_timestamp: i64,
+}""",
+        "test_cases": [
+            {"input": "initialize_pool(10)", "expected": "pool created"},
+            {"input": "stake(1000)", "expected": "tokens staked"},
+            {"input": "unstake() after 1 year", "expected": "tokens + 10% reward returned"}
+        ],
+        "hints": [
+            "Use Clock::get()? for timestamps",
+            "Store stake_timestamp as i64",
+            "Calculate time_diff = current_time - stake_timestamp",
+            "Use token::transfer for moving tokens"
+        ],
+        "tags": ["solana", "staking", "defi", "anchor"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_005",
+        "title": "Solana Escrow",
+        "description": """Create an escrow program for secure peer-to-peer token swaps.
+
+Requirements:
+- Initialize escrow with terms
+- Deposit tokens to escrow
+- Accept/cancel escrow
+- Automatic refund on timeout
+- Handle PDA properly""",
+        "difficulty": "senior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod escrow {
+    use super::*;
+
+    // TODO: Implement initialize escrow
+    pub fn initialize_escrow(
+        ctx: Context<InitializeEscrow>,
+        amount: u64,
+        timeout: i64,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement accept escrow
+    pub fn accept_escrow(ctx: Context<AcceptEscrow>) -> Result<()> {
+        // Your code here
+        // Verify conditions
+        // Transfer tokens to both parties
+        Ok(())
+    }
+
+    // TODO: Implement cancel escrow
+    pub fn cancel_escrow(ctx: Context<CancelEscrow>) -> Result<()> {
+        // Your code here
+        // Check timeout or initiator
+        // Refund tokens
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializeEscrow<'info> {
+    #[account(init, payer = initiator, space = 8 + 300)]
+    pub escrow: Account<'info, EscrowAccount>,
+    #[account(mut)]
+    pub initiator: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptEscrow<'info> {
+    #[account(mut)]
+    pub escrow: Account<'info, EscrowAccount>,
+    pub acceptor: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct CancelEscrow<'info> {
+    #[account(mut, close = initiator)]
+    pub escrow: Account<'info, EscrowAccount>,
+    pub initiator: Signer<'info>,
+}
+
+#[account]
+pub struct EscrowAccount {
+    pub initiator: Pubkey,
+    pub acceptor: Pubkey,
+    pub amount: u64,
+    pub timeout: i64,
+    pub is_active: bool,
+}""",
+        "test_cases": [
+            {"input": "initialize_escrow(1000, timeout)", "expected": "escrow created"},
+            {"input": "accept_escrow()", "expected": "tokens swapped"},
+            {"input": "cancel_escrow() after timeout", "expected": "tokens refunded"}
+        ],
+        "hints": [
+            "Use PDA for escrow token account",
+            "Check Clock::get()?.unix_timestamp for timeout",
+            "Only initiator can cancel before timeout",
+            "Anyone can cancel after timeout",
+            "Use close constraint to reclaim rent"
+        ],
+        "tags": ["solana", "escrow", "swap", "pda"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_006",
+        "title": "Solana DAO Voting",
+        "description": """Implement a DAO voting mechanism on Solana.
+
+Requirements:
+- Create proposals
+- Vote with token weight
+- Calculate vote results
+- Execute passed proposals
+- Time-locked voting periods""",
+        "difficulty": "expert",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod dao_voting {
+    use super::*;
+
+    // TODO: Implement create proposal
+    pub fn create_proposal(
+        ctx: Context<CreateProposal>,
+        description: String,
+        voting_period: i64,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement vote
+    pub fn vote(
+        ctx: Context<Vote>,
+        support: bool,
+    ) -> Result<()> {
+        // Your code here
+        // Get voter's token balance as voting weight
+        // Record vote
+        Ok(())
+    }
+
+    // TODO: Implement execute proposal
+    pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
+        // Your code here
+        // Check voting ended
+        // Check votes_for > votes_against
+        // Execute
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct CreateProposal<'info> {
+    #[account(init, payer = proposer, space = 8 + 500)]
+    pub proposal: Account<'info, Proposal>,
+    #[account(mut)]
+    pub proposer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Vote<'info> {
+    #[account(mut)]
+    pub proposal: Account<'info, Proposal>,
+    pub voter: Signer<'info>,
+}
+
+#[account]
+pub struct Proposal {
+    pub description: String,
+    pub proposer: Pubkey,
+    pub votes_for: u64,
+    pub votes_against: u64,
+    pub end_time: i64,
+    pub executed: bool,
+}""",
+        "test_cases": [
+            {"input": "create_proposal('Increase rewards', 7_days)", "expected": "proposal created"},
+            {"input": "vote(true)", "expected": "vote recorded"},
+            {"input": "execute_proposal()", "expected": "proposal executed"}
+        ],
+        "hints": [
+            "Store end_time = Clock::get()?.unix_timestamp + voting_period",
+            "Use token balance as voting weight",
+            "Prevent double voting with HashMap",
+            "Check end_time before execution"
+        ],
+        "tags": ["solana", "dao", "voting", "governance"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_007",
+        "title": "Solana Token Vesting",
+        "description": """Create a token vesting program with linear unlock schedule.
+
+Requirements:
+- Initialize vesting schedule
+- Calculate unlocked amount based on time
+- Claim unlocked tokens
+- Support cliff period
+- Handle multiple beneficiaries""",
+        "difficulty": "expert",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod token_vesting {
+    use super::*;
+
+    // TODO: Implement create vesting
+    pub fn create_vesting(
+        ctx: Context<CreateVesting>,
+        total_amount: u64,
+        start_time: i64,
+        cliff_duration: i64,
+        vesting_duration: i64,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement calculate vested amount
+    pub fn calculate_vested(
+        start_time: i64,
+        cliff_duration: i64,
+        vesting_duration: i64,
+        total_amount: u64,
+        current_time: i64,
+    ) -> u64 {
+        // Your code here
+        // Before cliff: 0
+        // After cliff, linear: (current_time - start_time) * total_amount / vesting_duration
+        0
+    }
+
+    // TODO: Implement claim tokens
+    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+        // Your code here
+        // Calculate vested amount
+        // Subtract already claimed
+        // Transfer claimable amount
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct CreateVesting<'info> {
+    #[account(init, payer = authority, space = 8 + 300)]
+    pub vesting: Account<'info, VestingAccount>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub beneficiary: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Claim<'info> {
+    #[account(mut)]
+    pub vesting: Account<'info, VestingAccount>,
+    pub beneficiary: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[account]
+pub struct VestingAccount {
+    pub beneficiary: Pubkey,
+    pub total_amount: u64,
+    pub claimed_amount: u64,
+    pub start_time: i64,
+    pub cliff_duration: i64,
+    pub vesting_duration: i64,
+}""",
+        "test_cases": [
+            {"input": "create_vesting(1000, now, 30_days, 365_days)", "expected": "vesting created"},
+            {"input": "claim() before cliff", "expected": "0 tokens"},
+            {"input": "claim() at 50% duration", "expected": "~500 tokens"}
+        ],
+        "hints": [
+            "Cliff: no tokens until cliff_duration passes",
+            "Linear vesting: proportional to time passed",
+            "Track claimed_amount to prevent double claims",
+            "claimable = vested - claimed"
+        ],
+        "tags": ["solana", "vesting", "tokens", "time-lock"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_008",
+        "title": "Solana Flash Loan",
+        "description": """Implement a flash loan protocol on Solana.
+
+Requirements:
+- Borrow any amount within single transaction
+- Execute callback to borrower program
+- Verify loan + fee repaid
+- Revert if not repaid
+- Track flash loan statistics""",
+        "difficulty": "expert",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod flash_loan {
+    use super::*;
+
+    // TODO: Implement initialize pool
+    pub fn initialize_pool(ctx: Context<InitializePool>, fee_rate: u64) -> Result<()> {
+        // Your code here
+        // fee_rate in basis points (e.g., 9 = 0.09%)
+        Ok(())
+    }
+
+    // TODO: Implement flash loan
+    pub fn flash_loan(
+        ctx: Context<FlashLoan>,
+        amount: u64,
+    ) -> Result<()> {
+        // Your code here
+        // 1. Transfer amount to borrower
+        // 2. Execute borrower callback (CPI)
+        // 3. Verify repayment + fee
+        // 4. If not repaid, transaction reverts
+        Ok(())
+    }
+
+    // Helper: Calculate fee
+    fn calculate_fee(amount: u64, fee_rate: u64) -> u64 {
+        amount * fee_rate / 10000
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializePool<'info> {
+    #[account(init, payer = authority, space = 8 + 200)]
+    pub pool: Account<'info, FlashLoanPool>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct FlashLoan<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, FlashLoanPool>,
+    #[account(mut)]
+    pub pool_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub borrower_token_account: Account<'info, TokenAccount>,
+    pub borrower: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[account]
+pub struct FlashLoanPool {
+    pub authority: Pubkey,
+    pub fee_rate: u64,
+    pub total_borrowed: u64,
+    pub total_fees: u64,
+}""",
+        "test_cases": [
+            {"input": "initialize_pool(9)", "expected": "pool created with 0.09% fee"},
+            {"input": "flash_loan(1000)", "expected": "loan + fee must be repaid in same tx"}
+        ],
+        "hints": [
+            "Flash loan must complete in one transaction",
+            "Use CPI (Cross-Program Invocation) for callback",
+            "Check balance before and after callback",
+            "Difference must be >= amount + fee"
+        ],
+        "tags": ["solana", "flash-loan", "defi", "advanced"],
+        "solved_count": 0
+    },
+    
+    # ============== NEW FUNC/TON PROBLEMS ==============
+    {
+        "problem_id": "ton_001",
+        "title": "TON Simple Wallet",
+        "description": """Create a basic TON wallet contract in FunC.
+
+Requirements:
+- Receive internal messages
+- Send messages to other contracts
+- Check sender authorization
+- Store owner address
+- Handle balance""",
+        "difficulty": "junior",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage layout:
+;; owner_address - 256 bits
+
+() recv_internal(int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    ;; TODO: Implement message handler
+    ;; Parse sender
+    ;; Check authorization
+    ;; Handle commands
+}
+
+() recv_external(slice in_msg) impure {
+    ;; TODO: Implement external message handler
+}
+
+;; TODO: Implement send message
+() send_message(slice dest_addr, int amount, int mode) impure {
+    ;; Your code here
+}
+
+;; TODO: Implement get owner
+slice get_owner() method_id {
+    ;; Your code here
+    ;; Load from storage
+}""",
+        "test_cases": [
+            {"input": "deploy contract", "expected": "contract deployed"},
+            {"input": "send_message(addr, 100)", "expected": "message sent"},
+            {"input": "unauthorized send", "expected": "rejected"}
+        ],
+        "hints": [
+            "Use begin_parse() for slices",
+            "Use load_msg_addr() for addresses",
+            "Use send_raw_message() for sending",
+            "Store owner in c4 register"
+        ],
+        "tags": ["ton", "func", "wallet", "basics"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "ton_002",
+        "title": "TON Jetton (Token)",
+        "description": """Implement a TON Jetton (fungible token) contract.
+
+Requirements:
+- Mint tokens to address
+- Transfer tokens between addresses
+- Track balances
+- Emit notifications
+- Follow TEP-74 standard""",
+        "difficulty": "middle",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage:
+;; total_supply - 64 bits
+;; admin_address - 256 bits
+;; content - cell (metadata)
+
+() recv_internal(int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    ;; TODO: Parse operation
+    int op = in_msg_body~load_uint(32);
+    
+    if (op == 0x0f8a7ea5) {  ;; transfer
+        ;; TODO: Implement transfer
+    }
+    
+    if (op == 21) {  ;; mint (only admin)
+        ;; TODO: Implement mint
+    }
+}
+
+;; TODO: Implement get balance
+int get_balance(slice owner_address) method_id {
+    ;; Your code here
+    return 0;
+}
+
+;; TODO: Implement get total supply
+int get_total_supply() method_id {
+    ;; Your code here
+    return 0;
+}""",
+        "test_cases": [
+            {"input": "mint(1000)", "expected": "tokens minted"},
+            {"input": "transfer(addr, 100)", "expected": "tokens transferred"},
+            {"input": "get_balance(addr)", "expected": "100"}
+        ],
+        "hints": [
+            "Use dict for storing balances",
+            "Follow TEP-74 Jetton standard",
+            "Use op codes for operations",
+            "Store data in c4 register"
+        ],
+        "tags": ["ton", "func", "jetton", "token"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "ton_003",
+        "title": "TON NFT Collection",
+        "description": """Create an NFT collection contract following TEP-62.
+
+Requirements:
+- Deploy NFT items
+- Track collection metadata
+- Implement get_nft_address_by_index
+- Royalty support
+- Batch operations""",
+        "difficulty": "senior",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage:
+;; next_item_index - 64 bits
+;; collection_content - cell
+;; owner_address - 256 bits
+
+() recv_internal(int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    int op = in_msg_body~load_uint(32);
+    
+    if (op == 1) {  ;; deploy NFT
+        ;; TODO: Implement NFT deployment
+        ;; Calculate NFT address
+        ;; Send deploy message
+        ;; Increment index
+    }
+}
+
+;; TODO: Implement get NFT address by index
+slice get_nft_address_by_index(int index) method_id {
+    ;; Your code here
+    ;; Calculate deterministic address from collection + index
+}
+
+;; TODO: Implement get collection data
+(int, cell, slice) get_collection_data() method_id {
+    ;; Return: (next_item_index, collection_content, owner_address)
+}
+
+;; TODO: Implement get NFT content
+cell get_nft_content(int index, cell individual_content) method_id {
+    ;; Your code here
+    ;; Combine collection content + individual content
+}""",
+        "test_cases": [
+            {"input": "deploy_nft(metadata)", "expected": "NFT deployed"},
+            {"input": "get_nft_address_by_index(0)", "expected": "correct address"},
+            {"input": "get_collection_data()", "expected": "collection info"}
+        ],
+        "hints": [
+            "Follow TEP-62 NFT standard",
+            "Use STATEINIT for deterministic addresses",
+            "Store collection base URI in content cell",
+            "Each NFT is a separate contract"
+        ],
+        "tags": ["ton", "func", "nft", "collection"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "ton_004",
+        "title": "TON Multisig Wallet",
+        "description": """Implement a multi-signature wallet on TON.
+
+Requirements:
+- Multiple owners (k-of-n signatures)
+- Submit transaction proposal
+- Approve transaction
+- Execute when threshold met
+- Cancel transaction""",
+        "difficulty": "senior",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage:
+;; owners - dictionary
+;; required_confirmations - 8 bits
+;; transaction_count - 32 bits
+;; transactions - dictionary
+
+() recv_internal(int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    int op = in_msg_body~load_uint(32);
+    
+    if (op == 1) {  ;; submit transaction
+        ;; TODO: Implement submit
+    }
+    
+    if (op == 2) {  ;; confirm transaction
+        ;; TODO: Implement confirm
+        ;; Check if sender is owner
+        ;; Add confirmation
+        ;; Execute if threshold met
+    }
+    
+    if (op == 3) {  ;; execute transaction
+        ;; TODO: Implement execute
+    }
+}
+
+;; TODO: Implement is owner
+int is_owner(slice address) method_id {
+    ;; Your code here
+}
+
+;; TODO: Implement get confirmations
+int get_confirmations(int tx_id) method_id {
+    ;; Your code here
+}""",
+        "test_cases": [
+            {"input": "submit_transaction(dest, amount)", "expected": "tx created"},
+            {"input": "confirm by owner1", "expected": "confirmation added"},
+            {"input": "confirm by owner2", "expected": "tx executed"}
+        ],
+        "hints": [
+            "Use dict for owners and transactions",
+            "Store confirmations as bitmap",
+            "Count bits to check threshold",
+            "Use send_raw_message for execution"
+        ],
+        "tags": ["ton", "func", "multisig", "security"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "ton_005",
+        "title": "TON DEX Swap",
+        "description": """Create a simple DEX swap contract on TON.
+
+Requirements:
+- Add liquidity (provide token pairs)
+- Remove liquidity
+- Swap token A for token B
+- Calculate output amount (constant product)
+- Track LP shares""",
+        "difficulty": "expert",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage:
+;; reserve_a - 64 bits
+;; reserve_b - 64 bits
+;; total_lp_supply - 64 bits
+;; lp_balances - dictionary
+
+() recv_internal(int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    int op = in_msg_body~load_uint(32);
+    
+    if (op == 1) {  ;; add liquidity
+        ;; TODO: Implement add liquidity
+        ;; Calculate LP tokens to mint
+        ;; Update reserves
+    }
+    
+    if (op == 2) {  ;; swap
+        ;; TODO: Implement swap
+        ;; Calculate output using x*y=k
+        ;; Apply 0.3% fee
+        ;; Update reserves
+    }
+    
+    if (op == 3) {  ;; remove liquidity
+        ;; TODO: Implement remove liquidity
+    }
+}
+
+;; TODO: Implement get reserves
+(int, int) get_reserves() method_id {
+    ;; Return (reserve_a, reserve_b)
+}
+
+;; TODO: Implement calculate output amount
+int get_amount_out(int amount_in, int reserve_in, int reserve_out) method_id {
+    ;; Your code here
+    ;; Formula: (amount_in * 997 * reserve_out) / (reserve_in * 1000 + amount_in * 997)
+}""",
+        "test_cases": [
+            {"input": "add_liquidity(1000, 1000)", "expected": "LP tokens minted"},
+            {"input": "swap_a_for_b(100)", "expected": "tokens swapped"},
+            {"input": "get_reserves()", "expected": "updated reserves"}
+        ],
+        "hints": [
+            "Use x*y=k constant product formula",
+            "Apply 0.3% fee: multiply by 997/1000",
+            "LP tokens = sqrt(amount_a * amount_b) for first deposit",
+            "Store reserves and LP supply in storage"
+        ],
+        "tags": ["ton", "func", "dex", "defi", "amm"],
+        "solved_count": 0
+    },
+    
+    # ============== NEW CRYPTOGRAPHY PROBLEMS ==============
+    {
+        "problem_id": "crypto_004",
+        "title": "Hash Chain Verification",
+        "description": """Implement a hash chain for sequential data verification.
+
+Requirements:
+- Create hash chain from data array
+- Verify element at position
+- Support efficient proofs
+- Prevent tampering
+- Handle large chains""",
+        "difficulty": "middle",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract HashChain {
+    // Each element: hash(previous_hash + data)
+    bytes32 public chainHead;
+    uint256 public chainLength;
+    
+    event ElementAdded(uint256 indexed index, bytes32 hash);
+    
+    // TODO: Implement initialize chain
+    function initializeChain(bytes32 firstHash) external {
+        // Your code here
+    }
+    
+    // TODO: Implement add element
+    function addElement(bytes memory data) external returns (bytes32) {
+        // Your code here
+        // newHash = keccak256(abi.encodePacked(chainHead, data))
+    }
+    
+    // TODO: Implement verify chain
+    function verifyChain(
+        bytes32 startHash,
+        bytes[] memory data
+    ) public pure returns (bytes32) {
+        // Your code here
+        // Recompute chain and return final hash
+    }
+    
+    // TODO: Implement verify element at position
+    function verifyElement(
+        bytes32 startHash,
+        bytes[] memory precedingData,
+        bytes memory element
+    ) public pure returns (bool) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {"input": "initializeChain(genesis_hash)", "expected": "chain started"},
+            {"input": "addElement('data1')", "expected": "element added"},
+            {"input": "verifyChain(genesis, [data1, data2])", "expected": "true"}
+        ],
+        "hints": [
+            "Hash = keccak256(abi.encodePacked(prev_hash, data))",
+            "Store only the head for space efficiency",
+            "To verify, recompute entire chain",
+            "Each link depends on previous"
+        ],
+        "tags": ["cryptography", "hash-chain", "verification"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "crypto_005",
+        "title": "Zero-Knowledge Proof Verifier",
+        "description": """Implement a simple ZK proof verifier for age verification without revealing exact age.
+
+Requirements:
+- Prove age > threshold without revealing age
+- Use commitment scheme
+- Verify proof on-chain
+- Prevent replay attacks
+- Support multiple proofs""",
+        "difficulty": "expert",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract AgeVerifier {
+    mapping(address => bytes32) public commitments;
+    mapping(bytes32 => bool) public usedProofs;
+    
+    event CommitmentCreated(address indexed user, bytes32 commitment);
+    event ProofVerified(address indexed user, bool result);
+    
+    // TODO: Implement create commitment
+    function createCommitment(bytes32 commitment) external {
+        // Your code here
+        // commitment = keccak256(abi.encodePacked(age, salt))
+    }
+    
+    // TODO: Implement verify age > threshold
+    function verifyAgeAboveThreshold(
+        uint256 age,
+        bytes32 salt,
+        uint256 threshold
+    ) external returns (bool) {
+        // Your code here
+        // 1. Verify commitment: keccak256(age, salt) == stored commitment
+        // 2. Check age > threshold
+        // 3. Don't reveal exact age
+        // 4. Mark proof as used
+    }
+    
+    // TODO: Implement check if proof used
+    function isProofUsed(bytes32 proofId) external view returns (bool) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {"input": "createCommitment(hash(25, salt))", "expected": "commitment stored"},
+            {"input": "verifyAgeAboveThreshold(25, salt, 18)", "expected": "true"},
+            {"input": "verify same proof again", "expected": "rejected (replay)"}
+        ],
+        "hints": [
+            "Use commit-reveal pattern",
+            "Don't store actual age on-chain",
+            "Check commitment before verifying",
+            "Use nonce or timestamp to prevent replay"
+        ],
+        "tags": ["cryptography", "zero-knowledge", "privacy", "advanced"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "crypto_006",
+        "title": "Multi-Hash Verification",
+        "description": """Implement a system supporting multiple hash algorithms for verification.
+
+Requirements:
+- Support SHA256, Keccak256, RIPEMD160
+- Verify data against multiple hashes
+- Implement hash function selector
+- Compare hash outputs
+- Gas-efficient implementation""",
+        "difficulty": "middle",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MultiHashVerifier {
+    enum HashAlgorithm { KECCAK256, SHA256, RIPEMD160 }
+    
+    struct HashData {
+        HashAlgorithm algorithm;
+        bytes32 hash;
+    }
+    
+    mapping(uint256 => HashData) public storedHashes;
+    uint256 public hashCount;
+    
+    event HashStored(uint256 indexed id, HashAlgorithm algorithm, bytes32 hash);
+    event HashVerified(uint256 indexed id, bool result);
+    
+    // TODO: Implement store hash
+    function storeHash(HashAlgorithm algorithm, bytes memory data) external returns (uint256) {
+        // Your code here
+        // Calculate hash based on algorithm
+        // Store and return ID
+    }
+    
+    // TODO: Implement verify data
+    function verifyData(uint256 hashId, bytes memory data) external returns (bool) {
+        // Your code here
+        // Recalculate hash using stored algorithm
+        // Compare with stored hash
+    }
+    
+    // TODO: Implement calculate hash
+    function calculateHash(
+        HashAlgorithm algorithm,
+        bytes memory data
+    ) public pure returns (bytes32) {
+        // Your code here
+        if (algorithm == HashAlgorithm.KECCAK256) {
+            return keccak256(data);
+        } else if (algorithm == HashAlgorithm.SHA256) {
+            return sha256(data);
+        } else if (algorithm == HashAlgorithm.RIPEMD160) {
+            return ripemd160(data);
+        }
+    }
+}""",
+        "test_cases": [
+            {"input": "storeHash(KECCAK256, 'data')", "expected": "hash stored"},
+            {"input": "verifyData(id, 'data')", "expected": "true"},
+            {"input": "verifyData(id, 'wrong')", "expected": "false"}
+        ],
+        "hints": [
+            "Solidity supports keccak256, sha256, ripemd160",
+            "Use enum to select algorithm",
+            "RIPEMD160 returns bytes20, pad to bytes32",
+            "Compare hashes with =="
+        ],
+        "tags": ["cryptography", "hashing", "verification"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "crypto_007",
+        "title": "Threshold Signature Scheme",
+        "description": """Implement a threshold signature scheme where k-of-n signatures are required.
+
+Requirements:
+- Register signers
+- Collect partial signatures
+- Verify threshold met
+- Combine signatures
+- Execute when valid""",
+        "difficulty": "expert",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ThresholdSignature {
+    struct Message {
+        bytes32 messageHash;
+        uint256 signatureCount;
+        mapping(address => bool) hasSigned;
+        bool executed;
+    }
+    
+    address[] public signers;
+    uint256 public threshold;
+    mapping(bytes32 => Message) public messages;
+    
+    event SignerAdded(address indexed signer);
+    event MessageSigned(bytes32 indexed messageHash, address indexed signer);
+    event ThresholdReached(bytes32 indexed messageHash);
+    
+    // TODO: Implement initialize
+    function initialize(address[] memory _signers, uint256 _threshold) external {
+        // Your code here
+        // Check threshold <= signers.length
+    }
+    
+    // TODO: Implement sign message
+    function signMessage(bytes32 messageHash) external {
+        // Your code here
+        // Check sender is signer
+        // Check not already signed
+        // Increment signature count
+    }
+    
+    // TODO: Implement verify threshold
+    function isThresholdMet(bytes32 messageHash) public view returns (bool) {
+        // Your code here
+    }
+    
+    // TODO: Implement execute with threshold
+    function executeIfThreshold(
+        bytes32 messageHash,
+        address target,
+        bytes memory data
+    ) external {
+        // Your code here
+        // Check threshold met
+        // Check not executed
+        // Execute call
+    }
+}""",
+        "test_cases": [
+            {"input": "initialize([addr1, addr2, addr3], 2)", "expected": "2-of-3 multisig"},
+            {"input": "signMessage(hash) by addr1", "expected": "1 signature"},
+            {"input": "signMessage(hash) by addr2", "expected": "threshold met, execute"}
+        ],
+        "hints": [
+            "Store signers in array",
+            "Use mapping to prevent double signing",
+            "Count signatures per message",
+            "Execute only when count >= threshold"
+        ],
+        "tags": ["cryptography", "signatures", "multisig", "threshold"],
+        "solved_count": 0
+    },
 ]
 
 def get_problems():
