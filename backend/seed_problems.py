@@ -706,13 +706,14 @@ global int stored_value;
 
 () load_data() impure {{
     var ds = get_data().begin_parse();
-    stored_value = ds~load_uint(64);
+    ;; TODO: Load the stored value from persistent storage
+    ;; Your code here
 }}
 
 () save_data() impure {{
-    set_data(begin_cell()
-        .store_uint(stored_value, 64)
-        .end_cell());
+    ;; TODO: Save the stored value to persistent storage
+    ;; Hint: Use begin_cell(), store_uint(), and end_cell()
+    ;; Your code here
 }}
 
 () recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {{
@@ -722,14 +723,16 @@ global int stored_value;
     
     if (op == 1) {{ ;; Set value operation
         int new_value = in_msg~load_uint(64);
-        stored_value = new_value;
-        save_data();
+        ;; TODO: Store the new value and persist it
+        ;; Your code here
     }}
 }}
 
 int get_value() method_id {{
     load_data();
-    return stored_value;
+    ;; TODO: Return the stored value
+    ;; Your code here
+    return 0;
 }}""",
         "test_cases": gen_tvm_tests(15),
         "hints": [
