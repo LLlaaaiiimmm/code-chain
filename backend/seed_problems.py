@@ -248,9 +248,14 @@ int get_value() method_id {{
         "solved_count": 0
     })
 
-print(f"✅ Total: {len(PROBLEMS)}")
-print(f"   Solidity: {len([p for p in PROBLEMS if p['category']=='solidity'])}")
-print(f"   Rust: {len([p for p in PROBLEMS if p['category']=='rust'])}")
-print(f"   MOVE: {len([p for p in PROBLEMS if p['category']=='move'])}")
-print(f"   TVM: {len([p for p in PROBLEMS if p['category']=='func'])}")
-print("✅ All solved_count = 0")
+def get_problems():
+    """Return all 120 problems"""
+    return PROBLEMS
+
+if __name__ == "__main__":
+    print(f"✅ Total: {len(PROBLEMS)}")
+    print(f"   Solidity: {len([p for p in PROBLEMS if p['category']=='solidity'])}")
+    print(f"   Rust: {len([p for p in PROBLEMS if p['category']=='rust'])}")
+    print(f"   MOVE: {len([p for p in PROBLEMS if p['category']=='move'])}")
+    print(f"   TVM: {len([p for p in PROBLEMS if p['category']=='func'])}")
+    print("✅ All solved_count = 0")
