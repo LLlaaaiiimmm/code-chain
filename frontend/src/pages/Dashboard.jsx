@@ -23,6 +23,7 @@ import { DailyChallenges } from "../components/DailyChallenges";
 import { PersonalInsights } from "../components/PersonalInsights";
 import { RecommendedProblems } from "../components/RecommendedProblems";
 import { NotificationCenter } from "../components/NotificationCenter";
+import RankProgress from "../components/RankProgress";
 import { API } from "../App";
 
 const Dashboard = ({ user, token, onLogout }) => {
