@@ -1307,8 +1307,8 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
     rank = await db.users.count_documents({"elo_rating": {"$gt": user.get("elo_rating", 0)}}) + 1
     total_users = await db.users.count_documents({})
     
-    # Get current rank info
-    current_rank = await get_user_rank(user["user_id"])
+    # Get detailed rank info with progress
+    rank_info = await get_rank_progress(user["user_id"])
     
     # Daily streak
     daily_streak = await calculate_daily_streak(user["user_id"])
@@ -1339,7 +1339,10 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         "total_users": total_users,
         "recent_submissions": recent_submissions,
         "problems_by_difficulty": problems_by_difficulty,
-        "current_rank": current_rank,
+        "current_rank": rank_info["current_rank"],
+        "next_rank": rank_info["next_rank"],
+        "rank_progress": rank_info["progress"],
+        "rank_requirements": rank_info["requirements"],
         "daily_streak": daily_streak,
         "recent_achievements": recent_achievements_full
     }
