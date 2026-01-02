@@ -265,6 +265,10 @@ contract HelloBlockchain {
             return False
         
         self.log("✅ TEST 1 PASSED: Valid Solidity code accepted, tests passed, ELO increased", "SUCCESS")
+        
+        # Store token for later tests
+        self.user_tokens['test1_user'] = token
+        
         return True
     
     def test_hardcoded_answer_rejection(self):
