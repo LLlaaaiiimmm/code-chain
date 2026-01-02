@@ -547,11 +547,11 @@ if __name__ == "__main__":
             f.write('    },\\n')
         
         f.write(']\\n\\n')
-        f.write(f'print(f"Total problems: {{len(PROBLEMS)}}")\\n')
-        f.write(f'print(f"Solidity: {{len([p for p in PROBLEMS if p[\\'category\\'] == \\'solidity\\'])}}")\\n')
-        f.write(f'print(f"Rust: {{len([p for p in PROBLEMS if p[\\'category\\'] == \\'rust\\'])}}")\\n')
-        f.write(f'print(f"MOVE: {{len([p for p in PROBLEMS if p[\\'category\\'] == \\'move\\'])}}")\\n')
-        f.write(f'print(f"TVM: {{len([p for p in PROBLEMS if p[\\'category\\'] == \\'func\\'])}}")\\n')
+        f.write('print(f"Total problems: {len(PROBLEMS)}")\\n')
+        f.write('print(f"Solidity: {len([p for p in PROBLEMS if p[\'category\'] == \'solidity\'])}")\\n')
+        f.write('print(f"Rust: {len([p for p in PROBLEMS if p[\'category\'] == \'rust\'])}")\\n')
+        f.write('print(f"MOVE: {len([p for p in PROBLEMS if p[\'category\'] == \'move\'])}")\\n')
+        f.write('print(f"TVM: {len([p for p in PROBLEMS if p[\'category\'] == \'func\'])}")\\n')
     
     print(f"Generated {len(problems)} problems!")
     print(f"Solidity: {len([p for p in problems if p['category'] == 'solidity'])}")
