@@ -168,6 +168,11 @@ const AppRouter = ({ user, loading, login, logout, token }) => {
           <ProblemSolver user={user} token={token} onLogout={logout} />
         </ProtectedRoute>
       } />
+      <Route path="/problem/:problemId" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <ProblemSolver user={user} token={token} onLogout={logout} />
+        </ProtectedRoute>
+      } />
       <Route path="/hackathons" element={
         <ProtectedRoute user={user} loading={loading}>
           <Hackathons user={user} token={token} onLogout={logout} />
