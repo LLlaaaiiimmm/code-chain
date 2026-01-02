@@ -1,1114 +1,571 @@
 #!/usr/bin/env python3
 """
-CodeChain Backend API Testing Suite
-Tests critical fixes for empty code validation, one-time solve logic, 
-problem status check, and certificate minting authentication.
+Backend API Testing for CodeChain Platform
+Testing Solidity Code Validation End-to-End
+
+This script tests the complete flow:
+1. User registration/login
+2. Problem retrieval (sol_001 - Hello Blockchain)
+3. Valid Solidity code submission
+4. Invalid Solidity code submission (hardcoded answers)
+5. Compilation error handling
+6. ELO updates and submission tracking
 """
 
-import asyncio
-import httpx
+import requests
 import json
-import uuid
-from datetime import datetime
-import os
-from dotenv import load_dotenv
+import time
+import sys
+from typing import Dict, Any, Optional
 
-# Load environment variables
-load_dotenv('/app/frontend/.env')
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://compiler-fix.preview.emergentagent.com')
-API_BASE = f"{BACKEND_URL}/api"
+# Backend URL from environment
+BACKEND_URL = "https://compiler-fix.preview.emergentagent.com/api"
 
 class CodeChainTester:
     def __init__(self):
-        self.client = httpx.AsyncClient(timeout=30.0)
-        self.test_user_token = None
-        self.test_user_id = None
-        self.expert_user_token = None
-        self.expert_user_id = None
-        self.test_problem_id = None
-        self.results = []
+        self.session = requests.Session()
+        self.test_users = []
         
-    async def log_result(self, test_name: str, success: bool, message: str, details: dict = None):
-        """Log test result"""
-        result = {
-            "test": test_name,
-            "success": success,
-            "message": message,
-            "details": details or {},
-            "timestamp": datetime.now().isoformat()
-        }
-        self.results.append(result)
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status}: {test_name} - {message}")
-        if details:
-            print(f"   Details: {details}")
-    
-    async def test_user_registration(self):
-        """Test user registration"""
+    def log(self, message: str, level: str = "INFO"):
+        """Log test messages with timestamp"""
+        timestamp = time.strftime("%H:%M:%S")
+        print(f"[{timestamp}] {level}: {message}")
+        
+    def register_user(self, email: str, password: str, name: str) -> Optional[Dict]:
+        """Register a new test user"""
         try:
-            # Generate unique test user
-            unique_id = uuid.uuid4().hex[:8]
-            test_email = f"testuser_{unique_id}@example.com"
-            
-            response = await self.client.post(f"{API_BASE}/auth/register", json={
-                "email": test_email,
-                "password": "TestPassword123!",
-                "name": f"Test User {unique_id}"
+            response = self.session.post(f"{BACKEND_URL}/auth/register", json={
+                "email": email,
+                "password": password,
+                "name": name
             })
             
             if response.status_code == 200:
                 data = response.json()
-                self.test_user_token = data["token"]
-                self.test_user_id = data["user"]["user_id"]
-                await self.log_result("User Registration", True, "Successfully registered test user", {
-                    "user_id": self.test_user_id,
-                    "email": test_email
-                })
-                return True
+                self.log(f"✅ User registered: {name} ({email})")
+                return data
             else:
-                await self.log_result("User Registration", False, f"Registration failed: {response.status_code}", {
-                    "response": response.text
-                })
-                return False
+                self.log(f"❌ Registration failed: {response.status_code} - {response.text}", "ERROR")
+                return None
                 
         except Exception as e:
-            await self.log_result("User Registration", False, f"Registration error: {str(e)}")
-            return False
+            self.log(f"❌ Registration error: {str(e)}", "ERROR")
+            return None
     
-    async def test_expert_user_creation(self):
-        """Create expert user for certificate testing"""
+    def login_user(self, email: str, password: str) -> Optional[str]:
+        """Login user and return JWT token"""
         try:
-            # Generate unique expert user
-            unique_id = uuid.uuid4().hex[:8]
-            expert_email = f"expert_{unique_id}@example.com"
-            
-            response = await self.client.post(f"{API_BASE}/auth/register", json={
-                "email": expert_email,
-                "password": "ExpertPassword123!",
-                "name": f"Expert User {unique_id}"
+            response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                "email": email,
+                "password": password
             })
             
             if response.status_code == 200:
                 data = response.json()
-                self.expert_user_token = data["token"]
-                self.expert_user_id = data["user"]["user_id"]
-                
-                # Upgrade to expert subscription
-                headers = {"Authorization": f"Bearer {self.expert_user_token}"}
-                upgrade_response = await self.client.post(
-                    f"{API_BASE}/subscriptions/upgrade?plan_id=expert",
-                    headers=headers
-                )
-                
-                if upgrade_response.status_code == 200:
-                    await self.log_result("Expert User Creation", True, "Successfully created expert user", {
-                        "user_id": self.expert_user_id,
-                        "email": expert_email,
-                        "subscription": "expert"
-                    })
-                    return True
-                else:
-                    await self.log_result("Expert User Creation", False, f"Subscription upgrade failed: {upgrade_response.status_code}")
-                    return False
+                token = data.get("token")
+                self.log(f"✅ User logged in: {email}")
+                return token
             else:
-                await self.log_result("Expert User Creation", False, f"Expert registration failed: {response.status_code}")
-                return False
+                self.log(f"❌ Login failed: {response.status_code} - {response.text}", "ERROR")
+                return None
                 
         except Exception as e:
-            await self.log_result("Expert User Creation", False, f"Expert creation error: {str(e)}")
-            return False
+            self.log(f"❌ Login error: {str(e)}", "ERROR")
+            return None
     
-    async def test_get_problems(self):
-        """Test getting problems list"""
+    def get_problems(self, token: str) -> Optional[Dict]:
+        """Get list of problems"""
         try:
-            response = await self.client.get(f"{API_BASE}/problems")
+            headers = {"Authorization": f"Bearer {token}"}
+            response = self.session.get(f"{BACKEND_URL}/problems", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
-                problems = data.get("problems", [])
-                if problems:
-                    self.test_problem_id = problems[0]["problem_id"]
-                    await self.log_result("Get Problems", True, f"Retrieved {len(problems)} problems", {
-                        "total_problems": len(problems),
-                        "test_problem_id": self.test_problem_id
-                    })
-                    return True
-                else:
-                    await self.log_result("Get Problems", False, "No problems found in database")
-                    return False
+                self.log(f"✅ Retrieved {len(data.get('problems', []))} problems")
+                return data
             else:
-                await self.log_result("Get Problems", False, f"Failed to get problems: {response.status_code}")
-                return False
+                self.log(f"❌ Failed to get problems: {response.status_code} - {response.text}", "ERROR")
+                return None
                 
         except Exception as e:
-            await self.log_result("Get Problems", False, f"Error getting problems: {str(e)}")
-            return False
+            self.log(f"❌ Get problems error: {str(e)}", "ERROR")
+            return None
     
-    async def test_empty_code_validation(self):
-        """Test empty code validation (minimum 10 characters)"""
-        if not self.test_user_token or not self.test_problem_id:
-            await self.log_result("Empty Code Validation", False, "Missing test user token or problem ID")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
-        # Test 1: Completely empty code
+    def get_problem_details(self, token: str, problem_id: str) -> Optional[Dict]:
+        """Get specific problem details"""
         try:
-            response = await self.client.post(f"{API_BASE}/submissions", 
-                headers=headers,
-                json={
-                    "problem_id": self.test_problem_id,
-                    "code": "",
-                    "language": "solidity"
-                }
-            )
+            headers = {"Authorization": f"Bearer {token}"}
+            response = self.session.get(f"{BACKEND_URL}/problems/{problem_id}", headers=headers)
             
-            if response.status_code == 400:
-                error_msg = response.json().get("detail", "")
-                if "minimum 10 characters" in error_msg.lower():
-                    await self.log_result("Empty Code Validation - Empty", True, "Correctly rejected empty code", {
-                        "status_code": response.status_code,
-                        "error_message": error_msg
-                    })
-                else:
-                    await self.log_result("Empty Code Validation - Empty", False, f"Wrong error message: {error_msg}")
-                    return False
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ Retrieved problem details: {problem_id}")
+                return data
             else:
-                await self.log_result("Empty Code Validation - Empty", False, f"Should have returned 400, got {response.status_code}")
-                return False
+                self.log(f"❌ Failed to get problem {problem_id}: {response.status_code} - {response.text}", "ERROR")
+                return None
                 
         except Exception as e:
-            await self.log_result("Empty Code Validation - Empty", False, f"Error testing empty code: {str(e)}")
-            return False
-        
-        # Test 2: Code with less than 10 characters
-        try:
-            response = await self.client.post(f"{API_BASE}/submissions", 
-                headers=headers,
-                json={
-                    "problem_id": self.test_problem_id,
-                    "code": "hello",  # 5 characters
-                    "language": "solidity"
-                }
-            )
-            
-            if response.status_code == 400:
-                error_msg = response.json().get("detail", "")
-                if "minimum 10 characters" in error_msg.lower():
-                    await self.log_result("Empty Code Validation - Short", True, "Correctly rejected short code", {
-                        "status_code": response.status_code,
-                        "error_message": error_msg,
-                        "code_length": 5
-                    })
-                    return True
-                else:
-                    await self.log_result("Empty Code Validation - Short", False, f"Wrong error message: {error_msg}")
-                    return False
-            else:
-                await self.log_result("Empty Code Validation - Short", False, f"Should have returned 400, got {response.status_code}")
-                return False
-                
-        except Exception as e:
-            await self.log_result("Empty Code Validation - Short", False, f"Error testing short code: {str(e)}")
-            return False
+            self.log(f"❌ Get problem details error: {str(e)}", "ERROR")
+            return None
     
-    async def test_one_time_solve_logic(self):
-        """Test one-time solve logic (prevent solving same problem twice)"""
-        if not self.test_user_token or not self.test_problem_id:
-            await self.log_result("One-Time Solve Logic", False, "Missing test user token or problem ID")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
-        # First submission - should succeed
-        valid_code = """
-        // SPDX-License-Identifier: MIT
-        pragma solidity ^0.8.0;
-        
-        contract Solution {
-            string public greeting = "Hello, World!";
-            
-            function setGreeting(string memory _greeting) public {
-                greeting = _greeting;
-            }
-            
-            function getGreeting() public view returns (string memory) {
-                return greeting;
-            }
-        }
-        """
-        
+    def submit_code(self, token: str, problem_id: str, code: str, language: str = "solidity") -> Optional[Dict]:
+        """Submit code solution"""
         try:
-            # Get user stats before submission
-            user_response = await self.client.get(f"{API_BASE}/auth/me", headers=headers)
-            if user_response.status_code != 200:
-                await self.log_result("One-Time Solve Logic", False, "Failed to get user stats before submission")
-                return False
-                
-            user_before = user_response.json()
-            elo_before = user_before.get("elo_rating", 1200)
-            problems_solved_before = user_before.get("problems_solved", 0)
-            
-            # First submission
-            response = await self.client.post(f"{API_BASE}/submissions", 
+            headers = {"Authorization": f"Bearer {token}"}
+            response = self.session.post(f"{BACKEND_URL}/submissions", 
                 headers=headers,
                 json={
-                    "problem_id": self.test_problem_id,
-                    "code": valid_code,
-                    "language": "solidity"
+                    "problem_id": problem_id,
+                    "code": code,
+                    "language": language
                 }
             )
             
             if response.status_code == 200:
-                submission_data = response.json()
-                if submission_data.get("status") == "passed":
-                    elo_change = submission_data.get("elo_change", 0)
-                    await self.log_result("One-Time Solve Logic - First Submit", True, "First submission successful", {
-                        "submission_id": submission_data.get("submission_id"),
-                        "status": submission_data.get("status"),
-                        "elo_change": elo_change
-                    })
-                else:
-                    await self.log_result("One-Time Solve Logic - First Submit", False, f"First submission failed: {submission_data.get('status')}")
-                    return False
+                data = response.json()
+                status = data.get("status", "unknown")
+                self.log(f"✅ Code submitted successfully - Status: {status}")
+                return data
             else:
-                await self.log_result("One-Time Solve Logic - First Submit", False, f"First submission failed: {response.status_code}")
-                return False
-            
-            # Verify user stats increased
-            user_response_after = await self.client.get(f"{API_BASE}/auth/me", headers=headers)
-            if user_response_after.status_code == 200:
-                user_after = user_response_after.json()
-                elo_after = user_after.get("elo_rating", 1200)
-                problems_solved_after = user_after.get("problems_solved", 0)
-                
-                if elo_after > elo_before and problems_solved_after > problems_solved_before:
-                    await self.log_result("One-Time Solve Logic - Stats Update", True, "User stats correctly updated", {
-                        "elo_before": elo_before,
-                        "elo_after": elo_after,
-                        "problems_solved_before": problems_solved_before,
-                        "problems_solved_after": problems_solved_after
-                    })
-                else:
-                    await self.log_result("One-Time Solve Logic - Stats Update", False, "User stats not updated correctly")
-                    return False
-            
-            # Second submission - should fail
-            response2 = await self.client.post(f"{API_BASE}/submissions", 
-                headers=headers,
-                json={
-                    "problem_id": self.test_problem_id,
-                    "code": valid_code,
-                    "language": "solidity"
-                }
-            )
-            
-            if response2.status_code == 400:
-                error_msg = response2.json().get("detail", "")
-                if "already solved" in error_msg.lower():
-                    await self.log_result("One-Time Solve Logic - Second Submit", True, "Correctly rejected second submission", {
-                        "status_code": response2.status_code,
-                        "error_message": error_msg
-                    })
-                    
-                    # Verify stats didn't change again
-                    user_response_final = await self.client.get(f"{API_BASE}/auth/me", headers=headers)
-                    if user_response_final.status_code == 200:
-                        user_final = user_response_final.json()
-                        elo_final = user_final.get("elo_rating", 1200)
-                        problems_solved_final = user_final.get("problems_solved", 0)
-                        
-                        if elo_final == elo_after and problems_solved_final == problems_solved_after:
-                            await self.log_result("One-Time Solve Logic - No Double Count", True, "Stats correctly unchanged on second submission", {
-                                "elo_remained": elo_final,
-                                "problems_solved_remained": problems_solved_final
-                            })
-                            return True
-                        else:
-                            await self.log_result("One-Time Solve Logic - No Double Count", False, "Stats incorrectly changed on second submission")
-                            return False
-                else:
-                    await self.log_result("One-Time Solve Logic - Second Submit", False, f"Wrong error message: {error_msg}")
-                    return False
-            else:
-                await self.log_result("One-Time Solve Logic - Second Submit", False, f"Should have returned 400, got {response2.status_code}")
-                return False
+                self.log(f"❌ Code submission failed: {response.status_code} - {response.text}", "ERROR")
+                return {"error": response.text, "status_code": response.status_code}
                 
         except Exception as e:
-            await self.log_result("One-Time Solve Logic", False, f"Error testing one-time solve: {str(e)}")
-            return False
+            self.log(f"❌ Submit code error: {str(e)}", "ERROR")
+            return None
     
-    async def test_problem_status_check(self):
-        """Test problem status check endpoint"""
-        if not self.test_user_token or not self.test_problem_id:
-            await self.log_result("Problem Status Check", False, "Missing test user token or problem ID")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
+    def get_user_stats(self, token: str) -> Optional[Dict]:
+        """Get user statistics"""
         try:
-            # Check status of solved problem
-            response = await self.client.get(f"{API_BASE}/problems/{self.test_problem_id}/status", headers=headers)
-            
-            if response.status_code == 200:
-                status_data = response.json()
-                is_solved = status_data.get("is_solved", False)
-                submission = status_data.get("submission")
-                
-                if is_solved and submission:
-                    await self.log_result("Problem Status Check - Solved", True, "Correctly shows problem as solved", {
-                        "problem_id": self.test_problem_id,
-                        "is_solved": is_solved,
-                        "submission_id": submission.get("submission_id") if submission else None
-                    })
-                else:
-                    await self.log_result("Problem Status Check - Solved", False, f"Problem should be marked as solved: is_solved={is_solved}")
-                    return False
-            else:
-                await self.log_result("Problem Status Check - Solved", False, f"Status check failed: {response.status_code}")
-                return False
-            
-            # Test with a different problem (should be unsolved)
-            problems_response = await self.client.get(f"{API_BASE}/problems")
-            if problems_response.status_code == 200:
-                problems = problems_response.json().get("problems", [])
-                unsolved_problem = None
-                for problem in problems:
-                    if problem["problem_id"] != self.test_problem_id:
-                        unsolved_problem = problem["problem_id"]
-                        break
-                
-                if unsolved_problem:
-                    unsolved_response = await self.client.get(f"{API_BASE}/problems/{unsolved_problem}/status", headers=headers)
-                    if unsolved_response.status_code == 200:
-                        unsolved_data = unsolved_response.json()
-                        if not unsolved_data.get("is_solved", True):
-                            await self.log_result("Problem Status Check - Unsolved", True, "Correctly shows problem as unsolved", {
-                                "problem_id": unsolved_problem,
-                                "is_solved": unsolved_data.get("is_solved")
-                            })
-                            return True
-                        else:
-                            await self.log_result("Problem Status Check - Unsolved", False, "Problem should be marked as unsolved")
-                            return False
-                    else:
-                        await self.log_result("Problem Status Check - Unsolved", False, f"Unsolved status check failed: {unsolved_response.status_code}")
-                        return False
-                else:
-                    await self.log_result("Problem Status Check - Unsolved", True, "No additional problems to test unsolved status")
-                    return True
-            else:
-                await self.log_result("Problem Status Check - Unsolved", True, "Could not get additional problems for unsolved test")
-                return True
-                
-        except Exception as e:
-            await self.log_result("Problem Status Check", False, f"Error testing problem status: {str(e)}")
-            return False
-    
-    async def test_certificate_minting_auth(self):
-        """Test certificate minting authentication"""
-        if not self.expert_user_token:
-            await self.log_result("Certificate Minting Auth", False, "Missing expert user token")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.expert_user_token}"}
-        
-        try:
-            # Test with expert user (should work)
-            response = await self.client.post(f"{API_BASE}/certificates/mint", 
-                headers=headers,
-                json={
-                    "certificate_type": "expert_rating",
-                    "metadata": {"test": "certificate"}
-                }
-            )
-            
-            if response.status_code == 200:
-                cert_data = response.json()
-                await self.log_result("Certificate Minting Auth - Expert", True, "Expert user can mint certificates", {
-                    "certificate_id": cert_data.get("certificate_id"),
-                    "type": cert_data.get("type"),
-                    "blockchain": cert_data.get("blockchain")
-                })
-            elif response.status_code == 400:
-                error_msg = response.json().get("detail", "")
-                if "rating" in error_msg.lower():
-                    await self.log_result("Certificate Minting Auth - Expert", True, "Expert user needs higher rating (expected)", {
-                        "error": error_msg
-                    })
-                else:
-                    await self.log_result("Certificate Minting Auth - Expert", False, f"Unexpected error: {error_msg}")
-                    return False
-            else:
-                await self.log_result("Certificate Minting Auth - Expert", False, f"Unexpected status code: {response.status_code}")
-                return False
-            
-            # Test with basic user (should fail)
-            if self.test_user_token:
-                basic_headers = {"Authorization": f"Bearer {self.test_user_token}"}
-                basic_response = await self.client.post(f"{API_BASE}/certificates/mint", 
-                    headers=basic_headers,
-                    json={
-                        "certificate_type": "expert_rating",
-                        "metadata": {"test": "certificate"}
-                    }
-                )
-                
-                if basic_response.status_code == 403:
-                    error_msg = basic_response.json().get("detail", "")
-                    if "expert subscription required" in error_msg.lower():
-                        await self.log_result("Certificate Minting Auth - Basic", True, "Basic user correctly denied", {
-                            "status_code": basic_response.status_code,
-                            "error_message": error_msg
-                        })
-                        return True
-                    else:
-                        await self.log_result("Certificate Minting Auth - Basic", False, f"Wrong error message: {error_msg}")
-                        return False
-                else:
-                    await self.log_result("Certificate Minting Auth - Basic", False, f"Should have returned 403, got {basic_response.status_code}")
-                    return False
-            else:
-                await self.log_result("Certificate Minting Auth - Basic", True, "No basic user to test (acceptable)")
-                return True
-                
-        except Exception as e:
-            await self.log_result("Certificate Minting Auth", False, f"Error testing certificate minting: {str(e)}")
-            return False
-
-    async def test_rank_system_dashboard(self):
-        """Test /api/stats/dashboard endpoint for rank system data"""
-        if not self.test_user_token:
-            await self.log_result("Rank System Dashboard", False, "Missing test user token")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
-        try:
-            response = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
+            headers = {"Authorization": f"Bearer {token}"}
+            response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
+                elo = data.get("elo_rating", 0)
+                problems_solved = data.get("problems_solved", 0)
+                self.log(f"✅ User stats - ELO: {elo}, Problems solved: {problems_solved}")
+                return data
+            else:
+                self.log(f"❌ Failed to get user stats: {response.status_code} - {response.text}", "ERROR")
+                return None
                 
-                # Check for required rank fields
-                required_fields = ["current_rank", "rank_progress", "rank_requirements"]
-                missing_fields = []
-                
-                for field in required_fields:
-                    if field not in data:
-                        missing_fields.append(field)
-                
-                if missing_fields:
-                    await self.log_result("Rank System Dashboard", False, f"Missing required fields: {missing_fields}")
-                    return False
-                
-                # Validate current_rank structure
-                current_rank = data.get("current_rank", {})
-                rank_fields = ["rank_id", "name", "min_elo", "max_elo", "min_problems", "max_problems", "icon", "color", "description", "benefits"]
-                missing_rank_fields = []
-                
-                for field in rank_fields:
-                    if field not in current_rank:
-                        missing_rank_fields.append(field)
-                
-                if missing_rank_fields:
-                    await self.log_result("Rank System Dashboard", False, f"Missing current_rank fields: {missing_rank_fields}")
-                    return False
-                
-                # Validate rank_progress structure
-                rank_progress = data.get("rank_progress", {})
-                progress_fields = ["elo", "problems", "overall"]
-                missing_progress_fields = []
-                
-                for field in progress_fields:
-                    if field not in rank_progress:
-                        missing_progress_fields.append(field)
-                
-                if missing_progress_fields:
-                    await self.log_result("Rank System Dashboard", False, f"Missing rank_progress fields: {missing_progress_fields}")
-                    return False
-                
-                # Validate progress values are between 0 and 100
-                for field in progress_fields:
-                    value = rank_progress.get(field, -1)
-                    if not (0 <= value <= 100):
-                        await self.log_result("Rank System Dashboard", False, f"Invalid progress value for {field}: {value} (should be 0-100)")
-                        return False
-                
-                # Validate rank_requirements structure
-                rank_requirements = data.get("rank_requirements", {})
-                req_fields = ["elo", "problems"]
-                missing_req_fields = []
-                
-                for field in req_fields:
-                    if field not in rank_requirements:
-                        missing_req_fields.append(field)
-                
-                if missing_req_fields:
-                    await self.log_result("Rank System Dashboard", False, f"Missing rank_requirements fields: {missing_req_fields}")
-                    return False
-                
-                # Check if next_rank exists (can be null for max rank)
-                next_rank = data.get("next_rank")
-                if next_rank is not None:
-                    # If next_rank exists, validate its structure
-                    for field in rank_fields:
-                        if field not in next_rank:
-                            await self.log_result("Rank System Dashboard", False, f"Missing next_rank field: {field}")
-                            return False
-                
-                await self.log_result("Rank System Dashboard", True, "Dashboard rank data structure is correct", {
-                    "current_rank": current_rank.get("name"),
-                    "rank_id": current_rank.get("rank_id"),
-                    "elo_progress": rank_progress.get("elo"),
-                    "problems_progress": rank_progress.get("problems"),
-                    "overall_progress": rank_progress.get("overall"),
-                    "next_rank": next_rank.get("name") if next_rank else "Max rank reached"
-                })
+        except Exception as e:
+            self.log(f"❌ Get user stats error: {str(e)}", "ERROR")
+            return None
+    
+    def test_valid_solidity_submission(self):
+        """Test 1: Valid Solidity submission for sol_001"""
+        self.log("🔧 TEST 1: Valid Solidity Code Submission", "TEST")
+        
+        # Register and login test user
+        user_data = self.register_user("testuser1@test.com", "Test123!", "Test User 1")
+        if not user_data:
+            return False
+            
+        token = user_data.get("token")
+        if not token:
+            self.log("❌ No token received from registration", "ERROR")
+            return False
+        
+        # Get initial user stats
+        initial_stats = self.get_user_stats(token)
+        if not initial_stats:
+            return False
+        
+        initial_elo = initial_stats.get("elo_rating", 1200)
+        initial_problems = initial_stats.get("problems_solved", 0)
+        
+        # Get problem details
+        problem = self.get_problem_details(token, "sol_001")
+        if not problem:
+            return False
+        
+        self.log(f"Problem: {problem.get('title', 'Unknown')}")
+        self.log(f"Difficulty: {problem.get('difficulty', 'Unknown')}")
+        
+        # Submit CORRECT Solidity code
+        correct_code = """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract HelloBlockchain {
+    string private greeting;
+    address public owner;
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    function setGreeting(string memory _greeting) public {
+        require(msg.sender == owner, "Only owner can set greeting");
+        greeting = _greeting;
+    }
+    
+    function getGreeting() public view returns (string memory) {
+        return greeting;
+    }
+}"""
+        
+        self.log("Submitting CORRECT Solidity code...")
+        submission = self.submit_code(token, "sol_001", correct_code)
+        
+        if not submission:
+            return False
+        
+        # Check submission results
+        status = submission.get("status")
+        test_results = submission.get("test_results", [])
+        gas_used = submission.get("gas_used", 0)
+        elo_change = submission.get("elo_change", 0)
+        
+        self.log(f"Submission Status: {status}")
+        self.log(f"Gas Used: {gas_used}")
+        self.log(f"ELO Change: {elo_change}")
+        self.log(f"Test Results: {len(test_results)} tests")
+        
+        # Print detailed test results
+        for i, test in enumerate(test_results):
+            passed = test.get("passed", False)
+            description = test.get("input", f"Test {i+1}")
+            error = test.get("error")
+            
+            if passed:
+                self.log(f"  ✅ {description}")
+            else:
+                self.log(f"  ❌ {description}: {error}")
+        
+        # Verify submission passed
+        if status != "passed":
+            self.log(f"❌ Expected 'passed' status, got '{status}'", "ERROR")
+            return False
+        
+        # Check ELO increase
+        if elo_change <= 0:
+            self.log(f"❌ Expected positive ELO change, got {elo_change}", "ERROR")
+            return False
+        
+        # Get updated user stats
+        final_stats = self.get_user_stats(token)
+        if not final_stats:
+            return False
+        
+        final_elo = final_stats.get("elo_rating", 1200)
+        final_problems = final_stats.get("problems_solved", 0)
+        
+        # Verify stats updated
+        if final_elo != initial_elo + elo_change:
+            self.log(f"❌ ELO not updated correctly. Expected: {initial_elo + elo_change}, Got: {final_elo}", "ERROR")
+            return False
+        
+        if final_problems != initial_problems + 1:
+            self.log(f"❌ Problems solved not updated. Expected: {initial_problems + 1}, Got: {final_problems}", "ERROR")
+            return False
+        
+        self.log("✅ TEST 1 PASSED: Valid Solidity code accepted, tests passed, ELO increased", "SUCCESS")
+        return True
+    
+    def test_hardcoded_answer_rejection(self):
+        """Test 2: Invalid submission with hardcoded answer"""
+        self.log("🔧 TEST 2: Hardcoded Answer Rejection", "TEST")
+        
+        # Register and login different test user
+        user_data = self.register_user("testuser2@test.com", "Test123!", "Test User 2")
+        if not user_data:
+            return False
+            
+        token = user_data.get("token")
+        if not token:
+            return False
+        
+        # Submit HARDCODED Solidity code (should fail multiple test cases)
+        hardcoded_code = """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract HelloBlockchain {
+    string private greeting;
+    address public owner;
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    function setGreeting(string memory _greeting) public {
+        // Intentionally do nothing - don't store the greeting
+    }
+    
+    function getGreeting() public view returns (string memory) {
+        // Always return hardcoded value
+        return "Hello, CodeChain!";
+    }
+}"""
+        
+        self.log("Submitting HARDCODED Solidity code (should fail)...")
+        submission = self.submit_code(token, "sol_001", hardcoded_code)
+        
+        if not submission:
+            return False
+        
+        # Check submission results
+        status = submission.get("status")
+        test_results = submission.get("test_results", [])
+        
+        self.log(f"Submission Status: {status}")
+        self.log(f"Test Results: {len(test_results)} tests")
+        
+        # Print detailed test results
+        passed_tests = 0
+        failed_tests = 0
+        
+        for i, test in enumerate(test_results):
+            passed = test.get("passed", False)
+            description = test.get("input", f"Test {i+1}")
+            expected = test.get("expected", "")
+            actual = test.get("actual", "")
+            error = test.get("error")
+            
+            if passed:
+                self.log(f"  ✅ {description}")
+                passed_tests += 1
+            else:
+                self.log(f"  ❌ {description}")
+                self.log(f"      Expected: {expected}")
+                self.log(f"      Actual: {actual}")
+                if error:
+                    self.log(f"      Error: {error}")
+                failed_tests += 1
+        
+        # Verify submission failed
+        if status != "failed":
+            self.log(f"❌ Expected 'failed' status, got '{status}'", "ERROR")
+            return False
+        
+        # Should have some failed tests (hardcoded answer won't work for all test cases)
+        if failed_tests == 0:
+            self.log("❌ Expected some tests to fail with hardcoded answer", "ERROR")
+            return False
+        
+        self.log(f"✅ TEST 2 PASSED: Hardcoded answer correctly rejected ({failed_tests} tests failed)", "SUCCESS")
+        return True
+    
+    def test_compilation_error(self):
+        """Test 3: Compilation error handling"""
+        self.log("🔧 TEST 3: Compilation Error Handling", "TEST")
+        
+        # Register and login different test user
+        user_data = self.register_user("testuser3@test.com", "Test123!", "Test User 3")
+        if not user_data:
+            return False
+            
+        token = user_data.get("token")
+        if not token:
+            return False
+        
+        # Submit code with syntax errors
+        syntax_error_code = """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract HelloBlockchain {
+    string private greeting
+    address public owner;  // Missing semicolon above
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    function setGreeting(string memory _greeting) public {
+        greeting = _greeting  // Missing semicolon
+    }
+    
+    function getGreeting() public view returns (string memory) {
+        return greeting;
+    }
+}"""
+        
+        self.log("Submitting code with SYNTAX ERRORS...")
+        submission = self.submit_code(token, "sol_001", syntax_error_code)
+        
+        if not submission:
+            return False
+        
+        # Check submission results
+        status = submission.get("status")
+        test_results = submission.get("test_results", [])
+        error_message = submission.get("error_message", "")
+        
+        self.log(f"Submission Status: {status}")
+        self.log(f"Error Message: {error_message}")
+        
+        # Print test results
+        for i, test in enumerate(test_results):
+            passed = test.get("passed", False)
+            description = test.get("input", f"Test {i+1}")
+            error = test.get("error", "")
+            
+            if passed:
+                self.log(f"  ✅ {description}")
+            else:
+                self.log(f"  ❌ {description}: {error}")
+        
+        # Verify compilation failed
+        if status != "failed":
+            self.log(f"❌ Expected 'failed' status for syntax error, got '{status}'", "ERROR")
+            return False
+        
+        # Should have compilation error in results
+        compilation_error_found = False
+        for test in test_results:
+            if "compilation" in test.get("input", "").lower() or "compilation" in test.get("error", "").lower():
+                compilation_error_found = True
+                break
+        
+        if not compilation_error_found and "compilation" not in error_message.lower():
+            self.log("❌ Expected compilation error to be reported", "ERROR")
+            return False
+        
+        self.log("✅ TEST 3 PASSED: Compilation errors correctly caught and reported", "SUCCESS")
+        return True
+    
+    def test_empty_code_validation(self):
+        """Test 4: Empty code validation"""
+        self.log("🔧 TEST 4: Empty Code Validation", "TEST")
+        
+        # Use existing user token (reuse testuser1)
+        token = self.login_user("testuser1@test.com", "Test123!")
+        if not token:
+            return False
+        
+        # Submit empty code
+        self.log("Submitting EMPTY code...")
+        submission = self.submit_code(token, "sol_001", "")
+        
+        # Should get error response
+        if submission and "error" in submission:
+            error_msg = submission.get("error", "")
+            status_code = submission.get("status_code", 0)
+            
+            self.log(f"Error Response: {error_msg}")
+            self.log(f"Status Code: {status_code}")
+            
+            if status_code == 400 and "too short" in error_msg.lower():
+                self.log("✅ TEST 4 PASSED: Empty code correctly rejected", "SUCCESS")
                 return True
             else:
-                await self.log_result("Rank System Dashboard", False, f"Dashboard request failed: {response.status_code}")
+                self.log(f"❌ Expected 400 status with 'too short' message", "ERROR")
                 return False
-                
-        except Exception as e:
-            await self.log_result("Rank System Dashboard", False, f"Error testing dashboard: {str(e)}")
-            return False
-
-    async def test_rank_system_detailed(self):
-        """Test /api/stats/rank endpoint for detailed rank information"""
-        if not self.test_user_token:
-            await self.log_result("Rank System Detailed", False, "Missing test user token")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
-        try:
-            response = await self.client.get(f"{API_BASE}/stats/rank", headers=headers)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Check for required fields
-                required_fields = ["current_rank", "progress", "requirements", "current_stats"]
-                missing_fields = []
-                
-                for field in required_fields:
-                    if field not in data:
-                        missing_fields.append(field)
-                
-                if missing_fields:
-                    await self.log_result("Rank System Detailed", False, f"Missing required fields: {missing_fields}")
-                    return False
-                
-                # Validate current_stats
-                current_stats = data.get("current_stats", {})
-                if "elo" not in current_stats or "problems" not in current_stats:
-                    await self.log_result("Rank System Detailed", False, "Missing current_stats fields (elo, problems)")
-                    return False
-                
-                await self.log_result("Rank System Detailed", True, "Detailed rank information is correct", {
-                    "current_rank": data.get("current_rank", {}).get("name"),
-                    "current_elo": current_stats.get("elo"),
-                    "current_problems": current_stats.get("problems"),
-                    "next_rank": data.get("next_rank", {}).get("name") if data.get("next_rank") else "Max rank"
-                })
-                return True
-            else:
-                await self.log_result("Rank System Detailed", False, f"Detailed rank request failed: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            await self.log_result("Rank System Detailed", False, f"Error testing detailed rank: {str(e)}")
-            return False
-
-    async def test_all_ranks_endpoint(self):
-        """Test /api/ranks/all endpoint for all ranks list"""
-        try:
-            response = await self.client.get(f"{API_BASE}/ranks/all")
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Check for required fields
-                if "ranks" not in data or "total_ranks" not in data:
-                    await self.log_result("All Ranks Endpoint", False, "Missing required fields (ranks, total_ranks)")
-                    return False
-                
-                ranks = data.get("ranks", [])
-                total_ranks = data.get("total_ranks", 0)
-                
-                # Should have 6 ranks as per the review request
-                if total_ranks != 6:
-                    await self.log_result("All Ranks Endpoint", False, f"Expected 6 ranks, got {total_ranks}")
-                    return False
-                
-                if len(ranks) != 6:
-                    await self.log_result("All Ranks Endpoint", False, f"Expected 6 ranks in array, got {len(ranks)}")
-                    return False
-                
-                # Validate each rank structure
-                rank_fields = ["rank_id", "name", "min_elo", "max_elo", "min_problems", "max_problems", "icon", "color", "description", "benefits"]
-                
-                for i, rank in enumerate(ranks):
-                    missing_fields = []
-                    for field in rank_fields:
-                        if field not in rank:
-                            missing_fields.append(field)
-                    
-                    if missing_fields:
-                        await self.log_result("All Ranks Endpoint", False, f"Rank {i+1} missing fields: {missing_fields}")
-                        return False
-                
-                # Check rank names (should be the 6 expected ranks)
-                expected_ranks = ["Newbie", "Junior Developer", "Middle Developer", "Senior Developer", "Expert", "Blockchain Architect"]
-                actual_rank_names = [rank.get("name") for rank in ranks]
-                
-                for expected_name in expected_ranks:
-                    if expected_name not in actual_rank_names:
-                        await self.log_result("All Ranks Endpoint", False, f"Missing expected rank: {expected_name}")
-                        return False
-                
-                await self.log_result("All Ranks Endpoint", True, "All ranks endpoint working correctly", {
-                    "total_ranks": total_ranks,
-                    "rank_names": actual_rank_names
-                })
-                return True
-            else:
-                await self.log_result("All Ranks Endpoint", False, f"All ranks request failed: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            await self.log_result("All Ranks Endpoint", False, f"Error testing all ranks: {str(e)}")
-            return False
-
-    async def test_rank_progress_calculation(self):
-        """Test that rank progress calculation is correct"""
-        if not self.test_user_token:
-            await self.log_result("Rank Progress Calculation", False, "Missing test user token")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
-        try:
-            # Get user stats
-            user_response = await self.client.get(f"{API_BASE}/auth/me", headers=headers)
-            if user_response.status_code != 200:
-                await self.log_result("Rank Progress Calculation", False, "Failed to get user stats")
-                return False
-            
-            user_data = user_response.json()
-            user_elo = user_data.get("elo_rating", 1200)
-            user_problems = user_data.get("problems_solved", 0)
-            
-            # Get rank progress
-            rank_response = await self.client.get(f"{API_BASE}/stats/rank", headers=headers)
-            if rank_response.status_code != 200:
-                await self.log_result("Rank Progress Calculation", False, "Failed to get rank progress")
-                return False
-            
-            rank_data = rank_response.json()
-            current_rank = rank_data.get("current_rank", {})
-            next_rank = rank_data.get("next_rank")
-            progress = rank_data.get("progress", {})
-            requirements = rank_data.get("requirements", {})
-            
-            # Validate progress calculation logic
-            if next_rank:
-                # Calculate expected ELO progress
-                elo_range = next_rank.get("min_elo", 0) - current_rank.get("min_elo", 0)
-                elo_current = user_elo - current_rank.get("min_elo", 0)
-                expected_elo_progress = min(100, (elo_current / elo_range * 100) if elo_range > 0 else 100)
-                
-                # Calculate expected problems progress
-                problems_range = next_rank.get("min_problems", 0) - current_rank.get("min_problems", 0)
-                problems_current = user_problems - current_rank.get("min_problems", 0)
-                expected_problems_progress = min(100, (problems_current / problems_range * 100) if problems_range > 0 else 100)
-                
-                # Check if calculated progress matches
-                actual_elo_progress = progress.get("elo", 0)
-                actual_problems_progress = progress.get("problems", 0)
-                
-                # Allow small floating point differences
-                elo_diff = abs(expected_elo_progress - actual_elo_progress)
-                problems_diff = abs(expected_problems_progress - actual_problems_progress)
-                
-                if elo_diff > 1 or problems_diff > 1:
-                    await self.log_result("Rank Progress Calculation", False, f"Progress calculation mismatch - ELO: expected {expected_elo_progress:.1f}, got {actual_elo_progress:.1f}; Problems: expected {expected_problems_progress:.1f}, got {actual_problems_progress:.1f}")
-                    return False
-                
-                # Check requirements calculation
-                expected_elo_req = max(0, next_rank.get("min_elo", 0) - user_elo)
-                expected_problems_req = max(0, next_rank.get("min_problems", 0) - user_problems)
-                
-                actual_elo_req = requirements.get("elo", 0)
-                actual_problems_req = requirements.get("problems", 0)
-                
-                if expected_elo_req != actual_elo_req or expected_problems_req != actual_problems_req:
-                    await self.log_result("Rank Progress Calculation", False, f"Requirements calculation mismatch - ELO: expected {expected_elo_req}, got {actual_elo_req}; Problems: expected {expected_problems_req}, got {actual_problems_req}")
-                    return False
-            
-            await self.log_result("Rank Progress Calculation", True, "Rank progress calculation is correct", {
-                "user_elo": user_elo,
-                "user_problems": user_problems,
-                "current_rank": current_rank.get("name"),
-                "elo_progress": progress.get("elo"),
-                "problems_progress": progress.get("problems"),
-                "overall_progress": progress.get("overall")
-            })
-            return True
-            
-        except Exception as e:
-            await self.log_result("Rank Progress Calculation", False, f"Error testing progress calculation: {str(e)}")
-            return False
-
-    async def test_delete_solved_submissions(self):
-        """Test DELETE /api/submissions/solved endpoint - delete all solved tasks functionality"""
-        if not self.test_user_token:
-            await self.log_result("Delete Solved Submissions", False, "Missing test user token")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
-        
-        try:
-            # Step 1: Get initial user stats from dashboard
-            dashboard_response = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
-            if dashboard_response.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, "Failed to get initial dashboard stats")
-                return False
-            
-            initial_stats = dashboard_response.json()
-            initial_elo = initial_stats.get("elo_rating", 1200)
-            initial_problems_solved = initial_stats.get("problems_solved", 0)
-            
-            await self.log_result("Delete Solved Submissions - Initial Stats", True, "Got initial user stats", {
-                "initial_elo": initial_elo,
-                "initial_problems_solved": initial_problems_solved
-            })
-            
-            # Step 2: Check if user has solved problems, if not create some
-            submissions_response = await self.client.get(f"{API_BASE}/submissions", headers=headers)
-            if submissions_response.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, "Failed to get user submissions")
-                return False
-            
-            submissions = submissions_response.json()
-            solved_submissions = [sub for sub in submissions if sub.get("status") == "passed"]
-            
-            # If no solved problems, create some by solving problems
-            if len(solved_submissions) == 0:
-                await self.log_result("Delete Solved Submissions - Setup", True, "No solved problems found, creating some...")
-                
-                # Get available problems
-                problems_response = await self.client.get(f"{API_BASE}/problems")
-                if problems_response.status_code != 200:
-                    await self.log_result("Delete Solved Submissions", False, "Failed to get problems for setup")
-                    return False
-                
-                problems = problems_response.json().get("problems", [])
-                if len(problems) < 2:
-                    await self.log_result("Delete Solved Submissions", False, "Not enough problems available for testing")
-                    return False
-                
-                # Submit solutions to first 2 problems
-                valid_code = """
-                // SPDX-License-Identifier: MIT
-                pragma solidity ^0.8.0;
-                
-                contract Solution {
-                    string public greeting = "Hello, CodeChain!";
-                    uint256 public totalSupply = 0;
-                    mapping(address => uint256) public balanceOf;
-                    
-                    function setGreeting(string memory _greeting) public {
-                        greeting = _greeting;
-                    }
-                    
-                    function getGreeting() public view returns (string memory) {
-                        return greeting;
-                    }
-                    
-                    function mint(uint256 amount) public {
-                        totalSupply += amount;
-                        balanceOf[msg.sender] += amount;
-                    }
-                }
-                """
-                
-                for i in range(min(2, len(problems))):
-                    problem = problems[i]
-                    submit_response = await self.client.post(f"{API_BASE}/submissions", 
-                        headers=headers,
-                        json={
-                            "problem_id": problem["problem_id"],
-                            "code": valid_code,
-                            "language": "solidity"
-                        }
-                    )
-                    
-                    if submit_response.status_code == 200:
-                        submission_data = submit_response.json()
-                        if submission_data.get("status") == "passed":
-                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", True, f"Successfully solved problem: {problem['title']}", {
-                                "problem_id": problem["problem_id"],
-                                "elo_change": submission_data.get("elo_change", 0)
-                            })
-                        else:
-                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", False, f"Problem solution failed: {submission_data.get('status')}")
-                    else:
-                        # Check if already solved
-                        if submit_response.status_code == 400 and "already solved" in submit_response.json().get("detail", "").lower():
-                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", True, f"Problem already solved: {problem['title']}")
-                        else:
-                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", False, f"Failed to submit solution: {submit_response.status_code}")
-            
-            # Step 3: Get updated stats after solving problems
-            dashboard_response_after = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
-            if dashboard_response_after.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, "Failed to get updated dashboard stats")
-                return False
-            
-            updated_stats = dashboard_response_after.json()
-            updated_elo = updated_stats.get("elo_rating", 1200)
-            updated_problems_solved = updated_stats.get("problems_solved", 0)
-            
-            await self.log_result("Delete Solved Submissions - Updated Stats", True, "Got updated user stats after solving", {
-                "updated_elo": updated_elo,
-                "updated_problems_solved": updated_problems_solved,
-                "elo_gained": updated_elo - initial_elo,
-                "problems_gained": updated_problems_solved - initial_problems_solved
-            })
-            
-            # Ensure we have solved problems to delete
-            if updated_problems_solved == 0:
-                await self.log_result("Delete Solved Submissions", False, "No solved problems available for deletion test")
-                return False
-            
-            # Step 4: Call DELETE /api/submissions/solved
-            delete_response = await self.client.delete(f"{API_BASE}/submissions/solved", headers=headers)
-            
-            if delete_response.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, f"Delete endpoint failed: {delete_response.status_code}")
-                return False
-            
-            delete_data = delete_response.json()
-            deleted_count = delete_data.get("deleted_count", 0)
-            elo_reverted = delete_data.get("elo_reverted", 0)
-            problems_reverted = delete_data.get("problems_reverted", 0)
-            
-            await self.log_result("Delete Solved Submissions - Delete Response", True, "Delete endpoint returned correct data", {
-                "deleted_count": deleted_count,
-                "elo_reverted": elo_reverted,
-                "problems_reverted": problems_reverted,
-                "affected_problems": delete_data.get("affected_problems", 0)
-            })
-            
-            # Step 5: Verify dashboard stats were reverted
-            dashboard_response_final = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
-            if dashboard_response_final.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, "Failed to get final dashboard stats")
-                return False
-            
-            final_stats = dashboard_response_final.json()
-            final_elo = final_stats.get("elo_rating", 1200)
-            final_problems_solved = final_stats.get("problems_solved", 0)
-            
-            # Check if stats were properly reverted
-            expected_final_elo = updated_elo - elo_reverted
-            expected_final_problems = updated_problems_solved - problems_reverted
-            
-            if final_elo != expected_final_elo:
-                await self.log_result("Delete Solved Submissions - ELO Revert", False, f"ELO not properly reverted: expected {expected_final_elo}, got {final_elo}")
-                return False
-            
-            if final_problems_solved != expected_final_problems:
-                await self.log_result("Delete Solved Submissions - Problems Revert", False, f"Problems count not properly reverted: expected {expected_final_problems}, got {final_problems_solved}")
-                return False
-            
-            await self.log_result("Delete Solved Submissions - Stats Reverted", True, "User stats correctly reverted", {
-                "final_elo": final_elo,
-                "final_problems_solved": final_problems_solved,
-                "elo_reverted": elo_reverted,
-                "problems_reverted": problems_reverted
-            })
-            
-            # Step 6: Verify no solved submissions remain
-            submissions_response_final = await self.client.get(f"{API_BASE}/submissions", headers=headers)
-            if submissions_response_final.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, "Failed to get final submissions")
-                return False
-            
-            final_submissions = submissions_response_final.json()
-            remaining_solved = [sub for sub in final_submissions if sub.get("status") == "passed"]
-            
-            if len(remaining_solved) > 0:
-                await self.log_result("Delete Solved Submissions - Submissions Cleared", False, f"Still have {len(remaining_solved)} solved submissions remaining")
-                return False
-            
-            await self.log_result("Delete Solved Submissions - Submissions Cleared", True, "All solved submissions successfully deleted")
-            
-            # Step 7: Test repeated delete call (should return 0 deleted)
-            repeat_delete_response = await self.client.delete(f"{API_BASE}/submissions/solved", headers=headers)
-            
-            if repeat_delete_response.status_code != 200:
-                await self.log_result("Delete Solved Submissions", False, f"Repeat delete failed: {repeat_delete_response.status_code}")
-                return False
-            
-            repeat_delete_data = repeat_delete_response.json()
-            repeat_deleted_count = repeat_delete_data.get("deleted_count", -1)
-            
-            if repeat_deleted_count != 0:
-                await self.log_result("Delete Solved Submissions - Repeat Delete", False, f"Repeat delete should return 0, got {repeat_deleted_count}")
-                return False
-            
-            await self.log_result("Delete Solved Submissions - Repeat Delete", True, "Repeat delete correctly returns 0", {
-                "deleted_count": repeat_deleted_count,
-                "message": repeat_delete_data.get("message", "")
-            })
-            
-            # Step 8: Verify user can solve problems again
-            if len(problems) > 0:
-                first_problem = problems[0]
-                re_solve_response = await self.client.post(f"{API_BASE}/submissions", 
-                    headers=headers,
-                    json={
-                        "problem_id": first_problem["problem_id"],
-                        "code": valid_code,
-                        "language": "solidity"
-                    }
-                )
-                
-                if re_solve_response.status_code == 200:
-                    re_solve_data = re_solve_response.json()
-                    if re_solve_data.get("status") == "passed":
-                        await self.log_result("Delete Solved Submissions - Re-solve", True, "User can solve problems again after deletion", {
-                            "problem_id": first_problem["problem_id"],
-                            "new_elo_change": re_solve_data.get("elo_change", 0)
-                        })
-                    else:
-                        await self.log_result("Delete Solved Submissions - Re-solve", False, f"Re-solve failed: {re_solve_data.get('status')}")
-                        return False
-                else:
-                    await self.log_result("Delete Solved Submissions - Re-solve", False, f"Re-solve request failed: {re_solve_response.status_code}")
-                    return False
-            
-            await self.log_result("Delete Solved Submissions", True, "All delete solved submissions tests passed successfully")
-            return True
-            
-        except Exception as e:
-            await self.log_result("Delete Solved Submissions", False, f"Error testing delete solved submissions: {str(e)}")
+        else:
+            self.log("❌ Expected error response for empty code", "ERROR")
             return False
     
-    async def test_authentication_endpoints(self):
-        """Test authentication endpoints"""
-        if not self.test_user_token:
-            await self.log_result("Authentication Endpoints", False, "Missing test user token")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+    def test_duplicate_submission_prevention(self):
+        """Test 5: Prevent solving same problem twice"""
+        self.log("🔧 TEST 5: Duplicate Submission Prevention", "TEST")
         
-        try:
-            # Test /auth/me endpoint
-            response = await self.client.get(f"{API_BASE}/auth/me", headers=headers)
+        # Use existing user who already solved sol_001
+        token = self.login_user("testuser1@test.com", "Test123!")
+        if not token:
+            return False
+        
+        # Try to submit solution again
+        correct_code = """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract HelloBlockchain {
+    string private greeting;
+    address public owner;
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    function setGreeting(string memory _greeting) public {
+        require(msg.sender == owner, "Only owner can set greeting");
+        greeting = _greeting;
+    }
+    
+    function getGreeting() public view returns (string memory) {
+        return greeting;
+    }
+}"""
+        
+        self.log("Submitting solution to already solved problem...")
+        submission = self.submit_code(token, "sol_001", correct_code)
+        
+        # Should get error response
+        if submission and "error" in submission:
+            error_msg = submission.get("error", "")
+            status_code = submission.get("status_code", 0)
             
-            if response.status_code == 200:
-                user_data = response.json()
-                if user_data.get("user_id") == self.test_user_id:
-                    await self.log_result("Authentication Endpoints", True, "Authentication working correctly", {
-                        "user_id": user_data.get("user_id"),
-                        "email": user_data.get("email"),
-                        "elo_rating": user_data.get("elo_rating")
-                    })
-                    return True
-                else:
-                    await self.log_result("Authentication Endpoints", False, "Wrong user data returned")
-                    return False
+            self.log(f"Error Response: {error_msg}")
+            self.log(f"Status Code: {status_code}")
+            
+            if status_code == 400 and "already solved" in error_msg.lower():
+                self.log("✅ TEST 5 PASSED: Duplicate submission correctly prevented", "SUCCESS")
+                return True
             else:
-                await self.log_result("Authentication Endpoints", False, f"Auth check failed: {response.status_code}")
+                self.log(f"❌ Expected 400 status with 'already solved' message", "ERROR")
                 return False
-                
-        except Exception as e:
-            await self.log_result("Authentication Endpoints", False, f"Error testing authentication: {str(e)}")
+        else:
+            self.log("❌ Expected error response for duplicate submission", "ERROR")
             return False
     
-    async def run_all_tests(self):
-        """Run all tests in sequence"""
-        print(f"🚀 Starting CodeChain Backend Tests")
-        print(f"📡 Testing API at: {API_BASE}")
-        print("=" * 60)
+    def run_all_tests(self):
+        """Run all backend tests"""
+        self.log("🚀 Starting CodeChain Backend API Tests", "START")
+        self.log(f"Backend URL: {BACKEND_URL}")
         
-        # Seed data first
-        try:
-            seed_response = await self.client.post(f"{API_BASE}/seed")
-            if seed_response.status_code == 200:
-                print("✅ Database seeded successfully")
-            else:
-                print(f"⚠️  Seed failed: {seed_response.status_code}")
-        except Exception as e:
-            print(f"⚠️  Seed error: {str(e)}")
-        
-        # Run tests in order
         tests = [
-            ("User Registration", self.test_user_registration),
-            ("Expert User Creation", self.test_expert_user_creation),
-            ("Get Problems", self.test_get_problems),
-            ("Authentication Endpoints", self.test_authentication_endpoints),
+            ("Valid Solidity Submission", self.test_valid_solidity_submission),
+            ("Hardcoded Answer Rejection", self.test_hardcoded_answer_rejection),
+            ("Compilation Error Handling", self.test_compilation_error),
             ("Empty Code Validation", self.test_empty_code_validation),
-            ("One-Time Solve Logic", self.test_one_time_solve_logic),
-            ("Problem Status Check", self.test_problem_status_check),
-            ("Certificate Minting Auth", self.test_certificate_minting_auth),
-            ("Rank System Dashboard", self.test_rank_system_dashboard),
-            ("Rank System Detailed", self.test_rank_system_detailed),
-            ("All Ranks Endpoint", self.test_all_ranks_endpoint),
-            ("Rank Progress Calculation", self.test_rank_progress_calculation),
-            ("Delete Solved Submissions", self.test_delete_solved_submissions),
+            ("Duplicate Submission Prevention", self.test_duplicate_submission_prevention),
         ]
         
         passed = 0
         failed = 0
         
         for test_name, test_func in tests:
-            print(f"\n🧪 Running: {test_name}")
+            self.log(f"\n{'='*60}")
             try:
-                success = await test_func()
-                if success:
+                if test_func():
                     passed += 1
                 else:
                     failed += 1
+                    self.log(f"❌ {test_name} FAILED", "FAIL")
             except Exception as e:
-                await self.log_result(test_name, False, f"Test execution error: {str(e)}")
                 failed += 1
+                self.log(f"❌ {test_name} FAILED with exception: {str(e)}", "FAIL")
+            
+            time.sleep(1)  # Brief pause between tests
         
-        # Summary
-        print("\n" + "=" * 60)
-        print(f"📊 TEST SUMMARY")
-        print(f"✅ Passed: {passed}")
-        print(f"❌ Failed: {failed}")
-        print(f"📈 Success Rate: {passed/(passed+failed)*100:.1f}%")
+        # Final summary
+        self.log(f"\n{'='*60}")
+        self.log("🏁 TEST SUMMARY", "SUMMARY")
+        self.log(f"✅ Passed: {passed}")
+        self.log(f"❌ Failed: {failed}")
+        self.log(f"📊 Success Rate: {passed}/{passed+failed} ({100*passed/(passed+failed):.1f}%)")
         
-        # Critical issues summary
-        critical_failures = [r for r in self.results if not r["success"] and "validation" in r["test"].lower() or "solve logic" in r["test"].lower()]
-        if critical_failures:
-            print(f"\n🚨 CRITICAL ISSUES FOUND:")
-            for failure in critical_failures:
-                print(f"   - {failure['test']}: {failure['message']}")
-        
-        await self.client.aclose()
-        return passed, failed, self.results
+        if failed == 0:
+            self.log("🎉 ALL TESTS PASSED! Solidity validation system is working correctly.", "SUCCESS")
+            return True
+        else:
+            self.log(f"⚠️  {failed} test(s) failed. Please check the issues above.", "WARNING")
+            return False
 
-async def main():
-    """Main test runner"""
+def main():
+    """Main test execution"""
     tester = CodeChainTester()
-    passed, failed, results = await tester.run_all_tests()
     
-    # Save detailed results
-    with open('/app/test_results_detailed.json', 'w') as f:
-        json.dump(results, f, indent=2)
-    
-    print(f"\n📄 Detailed results saved to: /app/test_results_detailed.json")
-    
-    # Return exit code based on results
-    return 0 if failed == 0 else 1
+    try:
+        success = tester.run_all_tests()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        tester.log("\n🛑 Tests interrupted by user", "INFO")
+        sys.exit(1)
+    except Exception as e:
+        tester.log(f"\n💥 Unexpected error: {str(e)}", "ERROR")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    exit_code = asyncio.run(main())
-    exit(exit_code)
+    main()
