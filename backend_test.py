@@ -159,8 +159,9 @@ class CodeChainTester:
         """Test 1: Valid Solidity submission for sol_001"""
         self.log("🔧 TEST 1: Valid Solidity Code Submission", "TEST")
         
-        # Register and login test user
-        user_data = self.register_user("testuser1@test.com", "Test123!", "Test User 1")
+        # Register and login test user with timestamp to ensure uniqueness
+        timestamp = str(int(time.time()))
+        user_data = self.register_user(f"testuser1_{timestamp}@test.com", "Test123!", "Test User 1")
         if not user_data:
             return False
             
