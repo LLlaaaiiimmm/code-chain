@@ -859,6 +859,154 @@ class CodeValidator:
         
         return all_passed, test_results, 0, None if all_passed else "Pattern validation failed"
     
+    
+    async def _validate_move(
+        self, 
+        code: str, 
+        problem: Dict[str, Any]
+    ) -> Tuple[bool, List[Dict], int, str]:
+        """
+        Validate MOVE (Aptos/Sui) code
+        Attempts compilation if move compiler available, otherwise pattern matching
+        """
+        test_results = []
+        
+        # Pre-validation: Check for TODOs and empty functions
+        if "TODO" in code or "// Your code here" in code:
+            test_results.append({
+                "test_id": 0,
+                "input": "Code completeness check",
+                "expected": "All TODOs removed",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Code contains TODO comments. Please implement all functions."
+            })
+            return False, test_results, 0, "Code incomplete"
+        
+        # Check for empty function bodies
+        empty_function_pattern = r'(public\s+fun|fun)\s+\w+\([^)]*\)\s*(:.*?)?\s*\{\s*\}'
+        if re.search(empty_function_pattern, code):
+            test_results.append({
+                "test_id": 0,
+                "input": "Function implementation check",
+                "expected": "All functions implemented",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Code has empty functions. Please implement the logic."
+            })
+            return False, test_results, 0, "Empty functions detected"
+        
+        # Try to compile if move compiler is available
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.move', delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            
+            try:
+                # Try aptos move compiler
+                result = subprocess.run(
+                    ['aptos', 'move', 'compile', '--package-dir', os.path.dirname(temp_file)],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                
+                if result.returncode != 0:
+                    # Compilation failed
+                    test_results.append({
+                        "test_id": 0,
+                        "input": "MOVE compilation",
+                        "expected": "Clean compilation",
+                        "passed": False,
+                        "gas_used": 0,
+                        "error": f"❌ Compilation error: {result.stderr[:200]}"
+                    })
+                    return False, test_results, 0, "Compilation failed"
+                else:
+                    # Compilation successful
+                    test_results.append({
+                        "test_id": 0,
+                        "input": "MOVE compilation",
+                        "expected": "Clean compilation",
+                        "passed": True,
+                        "gas_used": 0
+                    })
+                    
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                # Compiler not available or timeout, use pattern matching
+                pass
+            finally:
+                if os.path.exists(temp_file):
+                    os.unlink(temp_file)
+        except Exception as e:
+            # Fall through to pattern matching
+            pass
+        
+        # Pattern matching for MOVE code
+        return await self._validate_move_patterns(code, problem, test_results)
+    
+    async def _validate_move_patterns(
+        self,
+        code: str,
+        problem: Dict[str, Any],
+        test_results: List[Dict]
+    ) -> Tuple[bool, List[Dict], int, str]:
+        """Pattern-based validation for MOVE"""
+        
+        test_cases = problem.get("test_cases", [])
+        all_passed = True
+        
+        # Define patterns for MOVE constructs
+        patterns = {
+            "module": r'module\s+\w+::\w+\s*\{',
+            "struct": r'struct\s+\w+\s*(has\s+(key|store|drop|copy)(,\s*(key|store|drop|copy))*)?',
+            "public_fun": r'public\s+fun\s+\w+',
+            "acquires": r'acquires\s+\w+',
+            "signer": r'&signer',
+            "resource": r'move_to|move_from|borrow_global',
+        }
+        
+        for i, test_case in enumerate(test_cases, 1):
+            test_input = test_case.get("input", "")
+            expected = test_case.get("expected", "")
+            description = test_case.get("description", f"Test {i}")
+            
+            # Check if required MOVE constructs are present
+            passed = True
+            error_msg = None
+            
+            if "module" in test_input.lower() and not re.search(patterns["module"], code):
+                passed = False
+                error_msg = "❌ Missing module definition"
+            elif "struct" in test_input.lower() and not re.search(patterns["struct"], code):
+                passed = False
+                error_msg = "❌ Missing struct definition"
+            elif "resource" in test_input.lower() and not any(re.search(p, code) for p in [patterns["resource"]]):
+                passed = False
+                error_msg = "❌ Missing resource operations"
+            elif "signer" in test_input.lower() and not re.search(patterns["signer"], code):
+                passed = False
+                error_msg = "❌ Missing signer parameter"
+            else:
+                # Generic check: code should have actual implementation
+                if len(code.strip()) < 100:
+                    passed = False
+                    error_msg = "❌ Code too short - needs proper implementation"
+            
+            test_results.append({
+                "test_id": i,
+                "input": test_input,
+                "expected": expected,
+                "passed": passed,
+                "gas_used": 0,
+                "error": error_msg if not passed else None
+            })
+            
+            if not passed:
+                all_passed = False
+        
+        return all_passed, test_results, 0, None if all_passed else "Pattern validation failed"
+
     async def _validate_func(
         self, 
         code: str, 
