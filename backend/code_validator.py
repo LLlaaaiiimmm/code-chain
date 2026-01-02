@@ -671,24 +671,59 @@ class CodeValidator:
         """
         Validate Rust/Solana program with real compilation
         
-        Uses cargo to compile and test Rust code
+        Enhanced validation to prevent cheating:
+        - Strict TODO checks (no TODOs allowed)
+        - Empty function detection
+        - Pattern matching for all test cases
+        - Minimum code complexity requirements
         """
         
         test_results = []
         all_passed = True
         
-        # Step 1: Check for TODO markers (incomplete code)
-        todo_lines = [line for line in code.split('\n') if 'TODO' in line or 'todo!' in line]
-        if len(todo_lines) > 2:
+        # Step 0: Pre-validation checks - STRICT
+        # Check for ANY TODO markers (incomplete code)
+        if 'TODO' in code or 'todo!' in code or '// Your code here' in code or '/* TODO */' in code:
             test_results.append({
-                "test_id": 1,
-                "input": "Implementation check",
-                "expected": "Complete implementation",
+                "test_id": 0,
+                "input": "Code completeness check",
+                "expected": "All TODOs removed and functions implemented",
                 "passed": False,
                 "gas_used": 0,
-                "error": f"❌ Too many TODO markers ({len(todo_lines)}) - implementation incomplete"
+                "error": "❌ Code contains TODO markers or placeholder text. Please implement all functions."
             })
-            return False, test_results, 0, "Code contains TODOs"
+            return False, test_results, 0, "Code is incomplete - contains TODO markers"
+        
+        # Check for empty function bodies
+        empty_function_patterns = [
+            r'fn\s+\w+\([^)]*\)\s*(?:->\s*[^{]+)?\s*\{\s*\}',  # fn name() {}
+            r'pub\s+fn\s+\w+\([^)]*\)\s*(?:->\s*[^{]+)?\s*\{\s*\}',  # pub fn name() {}
+        ]
+        for pattern in empty_function_patterns:
+            if re.search(pattern, code):
+                test_results.append({
+                    "test_id": 0,
+                    "input": "Function implementation check",
+                    "expected": "All functions must have implementations",
+                    "passed": False,
+                    "gas_used": 0,
+                    "error": "❌ Code has empty functions. Please implement the required logic."
+                })
+                return False, test_results, 0, "Code has empty functions"
+        
+        # Check minimum code length (anti-template submission)
+        code_without_comments = re.sub(r'//.*$', '', code, flags=re.MULTILINE)
+        code_without_comments = re.sub(r'/\*.*?\*/', '', code_without_comments, flags=re.DOTALL)
+        if len(code_without_comments.strip()) < 200:
+            test_results.append({
+                "test_id": 0,
+                "input": "Code complexity check",
+                "expected": "Meaningful implementation with actual logic",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Code is too short. Please provide a complete implementation."
+            })
+            return False, test_results, 0, "Code too short"
         
         # Step 2: Try to compile with Rust
         try:
