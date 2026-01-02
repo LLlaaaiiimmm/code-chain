@@ -355,18 +355,9 @@ pub mod middle_program_{i} {{
     use super::*;
     
     pub fn mint_tokens(ctx: Context<MintTokens>, amount: u64) -> Result<()> {{
-        // TODO: Implement token minting
-        token::mint_to(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                token::MintTo {{
-                    mint: ctx.accounts.mint.to_account_info(),
-                    to: ctx.accounts.token_account.to_account_info(),
-                    authority: ctx.accounts.authority.to_account_info(),
-                }},
-            ),
-            amount,
-        )?;
+        // TODO: Implement token minting using CPI
+        // Hint: Use token::mint_to with proper CpiContext
+        // Your code here
         Ok(())
     }}
 }}
