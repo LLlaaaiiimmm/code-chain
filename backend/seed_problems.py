@@ -247,8 +247,7 @@ contract SecureVault {
                 "args": [],
                 "expected": "success",
                 "description": "Should accept deposits"
-            }
-        ],
+            },
             {"input": "withdraw()", "expected": "balance = 0, eth sent"},
             {"input": "reentrancy attack", "expected": "reverted"}
         ],
