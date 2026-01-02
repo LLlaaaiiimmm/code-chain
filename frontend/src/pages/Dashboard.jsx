@@ -263,6 +263,20 @@ const Dashboard = ({ user, token, onLogout }) => {
             </Card>
           </div>
 
+          {/* Detailed Rank Progress */}
+          <div className="mb-8">
+            <RankProgress rankInfo={{
+              current_rank: stats?.current_rank,
+              next_rank: stats?.next_rank,
+              progress: stats?.rank_progress,
+              requirements: stats?.rank_requirements,
+              current_stats: {
+                elo: stats?.elo_rating || 1200,
+                problems: stats?.problems_solved || 0
+              }
+            }} />
+          </div>
+
           {/* Recent Achievements */}
           {stats?.recent_achievements?.length > 0 && (
             <Card className="bg-card border-border mb-8">
