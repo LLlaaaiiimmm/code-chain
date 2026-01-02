@@ -66,6 +66,138 @@ const Dashboard = ({ user, token, onLogout }) => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Navigation */}
+        <nav className="sticky top-0 z-50 glass border-b border-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center gap-8">
+                <Link to="/" className="flex items-center gap-2">
+                  <Boxes className="w-8 h-8 text-primary" />
+                  <span className="font-secondary text-xl font-bold">CodeChain</span>
+                </Link>
+                
+                <div className="hidden md:flex items-center gap-6">
+                  <Link to="/dashboard" className="text-foreground font-medium">Dashboard</Link>
+                  <Link to="/problems" className="text-muted-foreground hover:text-foreground transition-colors">Problems</Link>
+                  <Link to="/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors">Leaderboard</Link>
+                  <Link to="/achievements" className="text-muted-foreground hover:text-foreground transition-colors">Achievements</Link>
+                  <Link to="/analytics" className="text-muted-foreground hover:text-foreground transition-colors">Analytics</Link>
+                  <Link to="/hackathons" className="text-muted-foreground hover:text-foreground transition-colors">Hackathons</Link>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <NotificationCenter token={token} />
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu-btn">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={user?.picture} />
+                        <AvatarFallback className="bg-primary/20 text-primary">
+                          {user?.name?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden md:inline">{user?.name}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/certificates" className="flex items-center gap-2">
+                        <Award className="w-4 h-4" />
+                        Certificates
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/pricing" className="flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        Upgrade Plan
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onLogout} className="text-red-400" data-testid="logout-btn">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Loading Skeleton */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-8">
+            {/* Welcome Section Skeleton */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="space-y-2">
+                <div className="h-8 w-64 bg-secondary/50 rounded animate-pulse" />
+                <div className="h-4 w-48 bg-secondary/30 rounded animate-pulse" />
+              </div>
+              <div className="h-10 w-40 bg-secondary/50 rounded animate-pulse" />
+            </div>
+
+            {/* Stats Grid Skeleton */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="bg-card border-border">
+                  <CardContent className="p-6">
+                    <div className="h-5 w-5 bg-secondary/50 rounded mb-4 animate-pulse" />
+                    <div className="h-8 w-20 bg-secondary/50 rounded mb-2 animate-pulse" />
+                    <div className="h-4 w-24 bg-secondary/30 rounded animate-pulse" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Rank Cards Skeleton */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {[...Array(2)].map((_, i) => (
+                <Card key={i} className="bg-card border-border">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-secondary/50 rounded-full animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-24 bg-secondary/30 rounded animate-pulse" />
+                        <div className="h-6 w-32 bg-secondary/50 rounded animate-pulse" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Recent Activity Skeleton */}
+            <Card className="bg-card border-border">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-12 bg-secondary/50 rounded animate-pulse" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background" data-testid="dashboard-page">
       {/* Navigation */}
