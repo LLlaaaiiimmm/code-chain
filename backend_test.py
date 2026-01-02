@@ -25,6 +25,7 @@ class CodeChainTester:
     def __init__(self):
         self.session = requests.Session()
         self.test_users = []
+        self.user_tokens = {}  # Store tokens for reuse
         
     def log(self, message: str, level: str = "INFO"):
         """Log test messages with timestamp"""
