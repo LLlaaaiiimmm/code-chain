@@ -5682,7 +5682,7 @@ pub struct Instruction {
     # ============== ADDITIONAL FUNC (TON) PROBLEMS ==============
     # Junior Level
     {
-        "problem_id": "func_003",
+        "problem_id": "func_006",
         "title": "TON Simple Wallet",
         "description": """Create a basic wallet contract on TON blockchain.
 
@@ -5742,7 +5742,7 @@ int balance() method_id {
         "solved_count": 0
     },
     {
-        "problem_id": "func_004",
+        "problem_id": "func_007",
         "title": "TON Token Contract",
         "description": """Implement a basic fungible token on TON.
 
@@ -5809,7 +5809,7 @@ int total_supply() method_id {
 
     # Middle Level
     {
-        "problem_id": "func_005",
+        "problem_id": "func_008",
         "title": "TON Jetton Standard",
         "description": """Implement the TEP-74 Jetton standard on TON.
 
@@ -5883,7 +5883,7 @@ global slice ctx_jetton_master;
         "solved_count": 0
     },
     {
-        "problem_id": "func_006",
+        "problem_id": "func_009",
         "title": "TON NFT Collection",
         "description": """Build an NFT collection contract following TEP-62.
 
@@ -5959,7 +5959,7 @@ global cell ctx_content;
 
     # Senior Level
     {
-        "problem_id": "func_007",
+        "problem_id": "func_010",
         "title": "TON DAO Governance",
         "description": """Create a DAO governance system on TON.
 
