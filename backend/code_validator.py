@@ -87,6 +87,32 @@ class CodeValidator:
         test_results = []
         total_gas = 0
         
+        # Step 0: Pre-validation checks
+        # Check for TODO comments (indicates incomplete solution)
+        if "TODO" in code or "// Your code here" in code:
+            test_results.append({
+                "test_id": 0,
+                "input": "Code completeness check",
+                "expected": "All TODOs removed and functions implemented",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Code contains TODO comments or placeholder text. Please implement all functions."
+            })
+            return False, test_results, 0, "Code is incomplete - contains TODO markers"
+        
+        # Check for empty function bodies (basic check)
+        empty_function_pattern = r'function\s+\w+\([^)]*\)[^{]*\{\s*\}'
+        if re.search(empty_function_pattern, code):
+            test_results.append({
+                "test_id": 0,
+                "input": "Function implementation check",
+                "expected": "All functions implemented with logic",
+                "passed": False,
+                "gas_used": 0,
+                "error": "❌ Code contains empty functions. Please implement the required logic."
+            })
+            return False, test_results, 0, "Code has empty functions"
+        
         # Check if compiler is available
         if not compile_source:
             return False, [{
