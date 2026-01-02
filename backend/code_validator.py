@@ -928,34 +928,60 @@ class CodeValidator:
     ) -> Tuple[bool, List[Dict], int, str]:
         """
         Validate MOVE (Aptos/Sui) code
-        Attempts compilation if move compiler available, otherwise pattern matching
+        
+        Enhanced validation to prevent cheating:
+        - Strict TODO checks (no TODOs allowed)
+        - Empty function detection
+        - Pattern matching for all test cases
+        - Minimum code complexity requirements
         """
         test_results = []
+        all_passed = True
         
-        # Pre-validation: Check for TODOs and empty functions
-        if "TODO" in code or "// Your code here" in code:
+        # Step 0: Pre-validation checks - STRICT
+        # Check for ANY TODO markers
+        if "TODO" in code or "// Your code here" in code or "/* TODO */" in code or "todo!" in code:
             test_results.append({
                 "test_id": 0,
                 "input": "Code completeness check",
-                "expected": "All TODOs removed",
+                "expected": "All TODOs removed and functions implemented",
                 "passed": False,
                 "gas_used": 0,
-                "error": "❌ Code contains TODO comments. Please implement all functions."
+                "error": "❌ Code contains TODO markers or placeholder text. Please implement all functions."
             })
-            return False, test_results, 0, "Code incomplete"
+            return False, test_results, 0, "Code is incomplete - contains TODO markers"
         
-        # Check for empty function bodies
-        empty_function_pattern = r'(public\s+fun|fun)\s+\w+\([^)]*\)\s*(:.*?)?\s*\{\s*\}'
-        if re.search(empty_function_pattern, code):
+        # Check for empty function bodies - STRICT patterns
+        empty_function_patterns = [
+            r'(public\s+fun|fun)\s+\w+\([^)]*\)\s*(:.*?)?\s*\{\s*\}',  # fun name() {}
+            r'(public\s+fun|fun)\s+\w+\([^)]*\)\s*(:.*?)?\s*\{\s*//.*\s*\}',  # fun with only comment
+            r'(public\s+entry\s+fun)\s+\w+\([^)]*\)\s*(:.*?)?\s*\{\s*\}',  # public entry fun
+        ]
+        for pattern in empty_function_patterns:
+            if re.search(pattern, code):
+                test_results.append({
+                    "test_id": 0,
+                    "input": "Function implementation check",
+                    "expected": "All functions must have implementations",
+                    "passed": False,
+                    "gas_used": 0,
+                    "error": "❌ Code has empty functions. Please implement the required logic."
+                })
+                return False, test_results, 0, "Code has empty functions"
+        
+        # Check minimum code length (anti-template submission)
+        code_without_comments = re.sub(r'//.*$', '', code, flags=re.MULTILINE)
+        code_without_comments = re.sub(r'/\*.*?\*/', '', code_without_comments, flags=re.DOTALL)
+        if len(code_without_comments.strip()) < 200:
             test_results.append({
                 "test_id": 0,
-                "input": "Function implementation check",
-                "expected": "All functions implemented",
+                "input": "Code complexity check",
+                "expected": "Meaningful implementation with actual logic",
                 "passed": False,
                 "gas_used": 0,
-                "error": "❌ Code has empty functions. Please implement the logic."
+                "error": "❌ Code is too short. Please provide a complete implementation."
             })
-            return False, test_results, 0, "Empty functions detected"
+            return False, test_results, 0, "Code too short"
         
         # Try to compile if move compiler is available
         try:
