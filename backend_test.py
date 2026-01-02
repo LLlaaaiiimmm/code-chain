@@ -288,31 +288,22 @@ class SkillChainTester:
                     if status_data.get("is_solved", False):
                         self.results["submission_integration"]["details"].append("⚠️ Problem already solved, skill progress may not change")
                 
-            # Step 4: Create a valid Solidity solution
-            # Using a simple working solution for a basic Solidity problem
-            valid_solidity_code = '''
+            # Step 4: Create a valid Solidity solution based on the problem requirements
+            # The problem expects setValue and getValue functions
+            valid_solidity_code = '''// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract TestContract {
-    string private greeting;
+contract JuniorProblem1 {
+    uint256 public value;
     
-    constructor() {
-        greeting = "Hello, World!";
+    function setValue(uint256 _value) public {
+        value = _value;
     }
     
-    function setGreeting(string memory _greeting) public {
-        greeting = _greeting;
+    function getValue() public view returns (uint256) {
+        return value;
     }
-    
-    function getGreeting() public view returns (string memory) {
-        return greeting;
-    }
-    
-    function getLength() public view returns (uint) {
-        return bytes(greeting).length;
-    }
-}
-'''
+}'''
             
             # Step 5: Submit the solution
             submission_data = {
