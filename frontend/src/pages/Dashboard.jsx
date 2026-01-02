@@ -29,6 +29,7 @@ import { API } from "../App";
 const Dashboard = ({ user, token, onLogout }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchDashboardStats();
