@@ -476,13 +476,7 @@ const Dashboard = ({ user, token, onLogout }) => {
                 </Link>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-12 bg-secondary/50 rounded animate-pulse" />
-                    ))}
-                  </div>
-                ) : stats?.recent_submissions?.length > 0 ? (
+                {stats?.recent_submissions?.length > 0 ? (
                   <div className="space-y-3">
                     {stats.recent_submissions.map((submission, i) => (
                       <div 
