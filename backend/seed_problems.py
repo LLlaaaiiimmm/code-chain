@@ -6034,7 +6034,7 @@ global int ctx_threshold;
     # ============== ADDITIONAL CRYPTOGRAPHY PROBLEMS ==============
     # Middle Level
     {
-        "problem_id": "crypto_008",
+        "problem_id": "crypto_011",
         "title": "Merkle Tree Airdrop Verifier",
         "description": """Implement an airdrop system using Merkle trees for efficient verification.
 
@@ -6115,7 +6115,7 @@ contract MerkleAirdrop {
         "solved_count": 0
     },
     {
-        "problem_id": "crypto_009",
+        "problem_id": "crypto_012",
         "title": "Ring Signature Mixer",
         "description": """Implement a privacy-preserving token mixer using ring signatures.
 
@@ -6217,7 +6217,7 @@ contract RingMixer {
 
     # Expert Level
     {
-        "problem_id": "crypto_010",
+        "problem_id": "crypto_013",
         "title": "Zero-Knowledge Proof Verifier",
         "description": """Implement a zk-SNARK verifier for private transactions.
 
