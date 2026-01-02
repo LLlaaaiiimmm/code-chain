@@ -59,6 +59,34 @@ contract Greeting {
                 "args": [],
                 "expected": "Hello, CodeChain!",
                 "description": "Should return correct greeting"
+            },
+            {
+                "type": "transaction",
+                "function": "setGreeting",
+                "args": ["Welcome to Blockchain!"],
+                "expected": "success",
+                "description": "Should update greeting to new value"
+            },
+            {
+                "type": "call",
+                "function": "getGreeting",
+                "args": [],
+                "expected": "Welcome to Blockchain!",
+                "description": "Should return updated greeting"
+            },
+            {
+                "type": "transaction",
+                "function": "setGreeting",
+                "args": ["Final Test Message"],
+                "expected": "success",
+                "description": "Should update greeting again"
+            },
+            {
+                "type": "call",
+                "function": "getGreeting",
+                "args": [],
+                "expected": "Final Test Message",
+                "description": "Should return final greeting value"
             }
         ],
         "hints": [
