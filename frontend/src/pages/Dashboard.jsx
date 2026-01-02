@@ -67,6 +67,30 @@ const Dashboard = ({ user, token, onLogout }) => {
     );
   };
 
+  const handleDeleteSolvedProblems = async () => {
+    if (!confirm("Вы уверены? Это удалит все ваши решенные задачи и вернет ELO назад. Это действие нельзя отменить!")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await axios.delete(`${API}/submissions/solved`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
+      });
+
+      alert(`Успешно удалено!\n- Задач: ${response.data.deleted_count}\n- ELO возвращено: ${response.data.elo_reverted}\n- Задач отменено: ${response.data.problems_reverted}`);
+      
+      // Refresh dashboard stats
+      await fetchDashboardStats();
+    } catch (error) {
+      console.error("Error deleting solved submissions:", error);
+      alert(error.response?.data?.detail || "Ошибка при удалении решенных задач");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
