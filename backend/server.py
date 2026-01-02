@@ -1628,13 +1628,21 @@ contract FlashArbitrage {
         }
     ]
     
-    # Use comprehensive problem set from seed_problems.py
-    # It already includes 83 quality problems across all categories
+    # Use NEW 120 problem set from seed_problems.py
+    # 30 Solidity + 30 Rust + 30 MOVE + 30 TVM
+    # All have solved_count = 0 and 15+ comprehensive tests
     all_problems = problems
     
-    # Clear and insert
+    # Add created_at timestamp to each problem
+    for problem in all_problems:
+        problem['created_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Clear ALL old problems and insert NEW 120
     await db.problems.delete_many({})
     await db.problems.insert_many(all_problems)
+    
+    # Also clear all submissions to reset progress
+    await db.submissions.delete_many({})
     
     # Seed hackathons
     hackathons = [
