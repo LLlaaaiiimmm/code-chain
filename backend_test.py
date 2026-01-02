@@ -819,6 +819,10 @@ class CodeChainTester:
             ("One-Time Solve Logic", self.test_one_time_solve_logic),
             ("Problem Status Check", self.test_problem_status_check),
             ("Certificate Minting Auth", self.test_certificate_minting_auth),
+            ("Rank System Dashboard", self.test_rank_system_dashboard),
+            ("Rank System Detailed", self.test_rank_system_detailed),
+            ("All Ranks Endpoint", self.test_all_ranks_endpoint),
+            ("Rank Progress Calculation", self.test_rank_progress_calculation),
         ]
         
         passed = 0
