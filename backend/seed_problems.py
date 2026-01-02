@@ -285,13 +285,17 @@ pub mod junior_program_{i} {{
     use super::*;
     
     pub fn initialize(ctx: Context<Initialize>, value: u64) -> Result<()> {{
+        // TODO: Implement initialization logic
+        // Hint: Store the value in the data account
         let data = &mut ctx.accounts.data;
-        data.value = value;
+        // Your code here
         Ok(())
     }}
     
     pub fn get_value(ctx: Context<GetValue>) -> Result<u64> {{
-        Ok(ctx.accounts.data.value)
+        // TODO: Return the stored value
+        // Your code here
+        Ok(0)
     }}
 }}
 
