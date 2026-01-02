@@ -271,7 +271,8 @@ contract HelloBlockchain {
         self.log("🔧 TEST 2: Hardcoded Answer Rejection", "TEST")
         
         # Register and login different test user
-        user_data = self.register_user("testuser2@test.com", "Test123!", "Test User 2")
+        timestamp = str(int(time.time()))
+        user_data = self.register_user(f"testuser2_{timestamp}@test.com", "Test123!", "Test User 2")
         if not user_data:
             return False
             
