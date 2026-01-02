@@ -593,26 +593,6 @@ const Dashboard = ({ user, token, onLogout }) => {
                       </div>
                     </div>
                   </Link>
-                  
-                  {stats?.problems_solved > 0 && (
-                    <button
-                      onClick={handleDeleteSolvedProblems}
-                      disabled={isDeleting}
-                      className="w-full p-4 rounded-lg bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="text-left">
-                          <p className="font-medium text-red-400">
-                            {isDeleting ? "Удаление..." : "Сбросить прогресс"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Удалить решенные задачи
-                          </p>
-                        </div>
-                        <XCircle className="w-5 h-5 text-red-400" />
-                      </div>
-                    </button>
-                  )}
                 </CardContent>
               </Card>
 
