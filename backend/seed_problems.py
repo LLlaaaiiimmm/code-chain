@@ -3534,6 +3534,2803 @@ contract ThresholdSignature {
         "tags": ["cryptography", "signatures", "multisig", "threshold"],
         "solved_count": 0
     },
+
+    # ============== ADDITIONAL SOLIDITY PROBLEMS (DeFi, NFT, DAO, Gaming) ==============
+    # Junior Level
+    {
+        "problem_id": "sol_009",
+        "title": "Voting Contract",
+        "description": """Create a simple voting contract for proposals.
+
+Requirements:
+- Add proposals with description and vote count
+- Users can vote for proposals (one vote per address)
+- Track who has voted
+- Get winning proposal
+- Emit events for new proposals and votes""",
+        "difficulty": "junior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Voting {
+    struct Proposal {
+        string description;
+        uint256 voteCount;
+    }
+    
+    Proposal[] public proposals;
+    mapping(address => bool) public hasVoted;
+    
+    event ProposalAdded(uint256 indexed proposalId, string description);
+    event Voted(address indexed voter, uint256 indexed proposalId);
+    
+    // TODO: Implement addProposal
+    function addProposal(string memory description) public {
+        // Your code here
+    }
+    
+    // TODO: Implement vote
+    function vote(uint256 proposalId) public {
+        // Your code here
+        // Check if already voted
+        // Increment vote count
+    }
+    
+    // TODO: Implement getWinner
+    function getWinner() public view returns (uint256 winningProposal) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "addProposal",
+                "args": ["Proposal 1"],
+                "expected": "success",
+                "description": "Should add proposal"
+            },
+            {
+                "type": "transaction",
+                "function": "vote",
+                "args": [0],
+                "expected": "success",
+                "description": "Should vote for proposal"
+            }
+        ],
+        "hints": [
+            "Use array to store proposals",
+            "Use mapping to track voters",
+            "Use require() to prevent double voting",
+            "Loop through proposals to find winner"
+        ],
+        "tags": ["voting", "governance", "basics"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_010",
+        "title": "Escrow Service",
+        "description": """Implement an escrow service for safe peer-to-peer transactions.
+
+Requirements:
+- Buyer deposits funds
+- Seller can confirm delivery
+- Buyer can confirm receipt and release funds
+- Support refunds with seller approval
+- Add dispute resolution by arbiter""",
+        "difficulty": "junior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Escrow {
+    enum State { AWAITING_PAYMENT, AWAITING_DELIVERY, COMPLETE, REFUNDED }
+    
+    struct Transaction {
+        address buyer;
+        address seller;
+        address arbiter;
+        uint256 amount;
+        State state;
+    }
+    
+    mapping(uint256 => Transaction) public transactions;
+    uint256 public transactionCount;
+    
+    event Deposited(uint256 indexed txId, address indexed buyer, uint256 amount);
+    event Released(uint256 indexed txId, address indexed seller, uint256 amount);
+    event Refunded(uint256 indexed txId, address indexed buyer, uint256 amount);
+    
+    // TODO: Implement createTransaction
+    function createTransaction(address seller, address arbiter) public payable returns (uint256) {
+        // Your code here
+    }
+    
+    // TODO: Implement release funds
+    function releaseFunds(uint256 txId) public {
+        // Your code here
+    }
+    
+    // TODO: Implement refund
+    function refund(uint256 txId) public {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "createTransaction",
+                "args": ["0x1234567890123456789012345678901234567890", "0x2234567890123456789012345678901234567890"],
+                "expected": "success",
+                "description": "Create escrow transaction"
+            }
+        ],
+        "hints": [
+            "Use enum for transaction states",
+            "Store transaction details in mapping",
+            "Use require() to validate state transitions",
+            "Transfer funds with .transfer() or .call()"
+        ],
+        "tags": ["escrow", "payment", "security"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_011",
+        "title": "ERC721 Basic NFT",
+        "description": """Create a basic ERC721 NFT contract with minting and transfers.
+
+Requirements:
+- Implement ERC721 standard
+- Mint new NFTs with token URI
+- Transfer NFTs between addresses
+- Track token ownership
+- Support tokenURI for metadata""",
+        "difficulty": "junior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract BasicNFT {
+    string public name = "CodeChain NFT";
+    string public symbol = "CCNFT";
+    
+    mapping(uint256 => address) public ownerOf;
+    mapping(address => uint256) public balanceOf;
+    mapping(uint256 => string) private tokenURIs;
+    uint256 public totalSupply;
+    
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Minted(address indexed to, uint256 indexed tokenId, string uri);
+    
+    // TODO: Implement mint
+    function mint(address to, string memory uri) public returns (uint256) {
+        // Your code here
+    }
+    
+    // TODO: Implement transfer
+    function transfer(address to, uint256 tokenId) public {
+        // Your code here
+    }
+    
+    // TODO: Implement tokenURI
+    function tokenURI(uint256 tokenId) public view returns (string memory) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "mint",
+                "args": ["0x1234567890123456789012345678901234567890", "ipfs://QmTest"],
+                "expected": "success",
+                "description": "Mint new NFT"
+            }
+        ],
+        "hints": [
+            "Use mappings for ownership tracking",
+            "Increment totalSupply on mint",
+            "Validate ownership before transfer",
+            "Store metadata URI for each token"
+        ],
+        "tags": ["nft", "erc721", "token"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_012",
+        "title": "Lottery System",
+        "description": """Create a fair lottery system with random winner selection.
+
+Requirements:
+- Users can enter by paying ticket price
+- Track all participants
+- Random winner selection (use block data)
+- Winner gets prize pool
+- Owner can start new round""",
+        "difficulty": "junior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Lottery {
+    address public owner;
+    address[] public players;
+    uint256 public ticketPrice = 0.01 ether;
+    
+    event PlayerEntered(address indexed player);
+    event WinnerSelected(address indexed winner, uint256 amount);
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    // TODO: Implement enter
+    function enter() public payable {
+        // Your code here
+        // Check ticket price paid
+        // Add player to array
+    }
+    
+    // TODO: Implement pickWinner
+    function pickWinner() public {
+        // Your code here
+        // Only owner can call
+        // Select random winner
+        // Transfer prize
+        // Reset lottery
+    }
+    
+    // TODO: Implement pseudo-random number generation
+    function random() private view returns (uint256) {
+        // Your code here - use block data
+    }
+    
+    function getPrizePool() public view returns (uint256) {
+        return address(this).balance;
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "enter",
+                "args": [],
+                "expected": "success",
+                "description": "Enter lottery with payment"
+            }
+        ],
+        "hints": [
+            "Use require() to check msg.value == ticketPrice",
+            "Store players in dynamic array",
+            "Use keccak256 with block data for randomness (not secure for production)",
+            "Clear players array after selecting winner"
+        ],
+        "tags": ["lottery", "random", "gaming"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_013",
+        "title": "Time Lock Vault",
+        "description": """Create a vault that locks funds until a specific time.
+
+Requirements:
+- Deposit funds with unlock timestamp
+- Cannot withdraw before unlock time
+- Support multiple deposits per user
+- Track total locked amount
+- Emit events for deposits and withdrawals""",
+        "difficulty": "junior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract TimeLockVault {
+    struct Deposit {
+        uint256 amount;
+        uint256 unlockTime;
+        bool withdrawn;
+    }
+    
+    mapping(address => Deposit[]) public deposits;
+    
+    event Deposited(address indexed user, uint256 amount, uint256 unlockTime);
+    event Withdrawn(address indexed user, uint256 amount);
+    
+    // TODO: Implement deposit
+    function deposit(uint256 unlockDelay) public payable {
+        // Your code here
+        // unlockDelay in seconds from now
+    }
+    
+    // TODO: Implement withdraw
+    function withdraw(uint256 depositIndex) public {
+        // Your code here
+        // Check unlock time has passed
+        // Check not already withdrawn
+    }
+    
+    // TODO: Implement getDeposits
+    function getDeposits(address user) public view returns (Deposit[] memory) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "deposit",
+                "args": [3600],
+                "expected": "success",
+                "description": "Deposit with 1 hour lock"
+            }
+        ],
+        "hints": [
+            "Use block.timestamp for current time",
+            "Store deposits in array per user",
+            "Check block.timestamp >= unlockTime",
+            "Mark deposit as withdrawn to prevent double withdrawal"
+        ],
+        "tags": ["timelock", "vault", "security"],
+        "solved_count": 0
+    },
+
+    # Middle Level
+    {
+        "problem_id": "sol_014",
+        "title": "Staking Contract",
+        "description": """Implement a token staking contract with rewards.
+
+Requirements:
+- Stake tokens for rewards
+- Calculate rewards based on time and amount
+- Unstake tokens with accumulated rewards
+- Track total staked and rewards distributed
+- Support APY configuration""",
+        "difficulty": "middle",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract Staking {
+    IERC20 public stakingToken;
+    IERC20 public rewardToken;
+    
+    uint256 public rewardRate = 100; // 100 tokens per day per 1000 staked
+    uint256 public totalStaked;
+    
+    struct Stake {
+        uint256 amount;
+        uint256 timestamp;
+        uint256 rewardDebt;
+    }
+    
+    mapping(address => Stake) public stakes;
+    
+    event Staked(address indexed user, uint256 amount);
+    event Unstaked(address indexed user, uint256 amount, uint256 reward);
+    
+    constructor(address _stakingToken, address _rewardToken) {
+        stakingToken = IERC20(_stakingToken);
+        rewardToken = IERC20(_rewardToken);
+    }
+    
+    // TODO: Implement stake
+    function stake(uint256 amount) public {
+        // Your code here
+    }
+    
+    // TODO: Implement calculateReward
+    function calculateReward(address user) public view returns (uint256) {
+        // Your code here
+        // Calculate based on time and amount
+    }
+    
+    // TODO: Implement unstake
+    function unstake() public {
+        // Your code here
+        // Return staked amount + rewards
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "stake",
+                "args": [1000],
+                "expected": "success",
+                "description": "Stake tokens"
+            }
+        ],
+        "hints": [
+            "Use transferFrom to receive tokens",
+            "Calculate reward: (amount * rate * time) / denominator",
+            "Use block.timestamp for timing",
+            "Transfer both stake and rewards on unstake"
+        ],
+        "tags": ["staking", "defi", "rewards"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_015",
+        "title": "Airdrop Manager",
+        "description": """Create an efficient airdrop distribution system.
+
+Requirements:
+- Upload list of recipients and amounts
+- Batch token distribution
+- Track claimed status
+- Support Merkle tree for gas optimization
+- Prevent double claims""",
+        "difficulty": "middle",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract AirdropManager {
+    IERC20 public token;
+    address public owner;
+    bytes32 public merkleRoot;
+    
+    mapping(address => bool) public hasClaimed;
+    
+    event AirdropClaimed(address indexed user, uint256 amount);
+    
+    constructor(address _token) {
+        token = IERC20(_token);
+        owner = msg.sender;
+    }
+    
+    // TODO: Implement setMerkleRoot
+    function setMerkleRoot(bytes32 _merkleRoot) public {
+        // Your code here
+    }
+    
+    // TODO: Implement claim with Merkle proof
+    function claim(uint256 amount, bytes32[] calldata proof) public {
+        // Your code here
+        // Verify Merkle proof
+        // Check not claimed
+        // Transfer tokens
+    }
+    
+    // TODO: Implement verifyProof
+    function verifyProof(
+        bytes32[] calldata proof,
+        address user,
+        uint256 amount
+    ) internal view returns (bool) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "setMerkleRoot",
+                "args": ["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"],
+                "expected": "success",
+                "description": "Set Merkle root"
+            }
+        ],
+        "hints": [
+            "Use bytes32 for Merkle root",
+            "Verify proof by hashing up the tree",
+            "Use keccak256 for hashing",
+            "Mark address as claimed after distribution"
+        ],
+        "tags": ["airdrop", "merkle-tree", "distribution"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_016",
+        "title": "Crowdfunding Platform",
+        "description": """Build a crowdfunding platform for project fundraising.
+
+Requirements:
+- Create campaigns with goal and deadline
+- Accept contributions
+- Refund if goal not met
+- Release funds if goal reached
+- Track campaign status""",
+        "difficulty": "middle",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Crowdfunding {
+    struct Campaign {
+        address creator;
+        uint256 goal;
+        uint256 deadline;
+        uint256 totalRaised;
+        bool finalized;
+    }
+    
+    mapping(uint256 => Campaign) public campaigns;
+    mapping(uint256 => mapping(address => uint256)) public contributions;
+    uint256 public campaignCount;
+    
+    event CampaignCreated(uint256 indexed campaignId, address creator, uint256 goal);
+    event Contributed(uint256 indexed campaignId, address contributor, uint256 amount);
+    event CampaignFinalized(uint256 indexed campaignId, bool success);
+    
+    // TODO: Implement createCampaign
+    function createCampaign(uint256 goal, uint256 duration) public returns (uint256) {
+        // Your code here
+    }
+    
+    // TODO: Implement contribute
+    function contribute(uint256 campaignId) public payable {
+        // Your code here
+    }
+    
+    // TODO: Implement finalize
+    function finalize(uint256 campaignId) public {
+        // Your code here
+        // Check deadline passed
+        // If goal met: transfer to creator
+        // If goal not met: enable refunds
+    }
+    
+    // TODO: Implement refund
+    function refund(uint256 campaignId) public {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "createCampaign",
+                "args": [1000000000000000000, 86400],
+                "expected": "success",
+                "description": "Create campaign with 1 ETH goal"
+            }
+        ],
+        "hints": [
+            "Use block.timestamp for deadline checking",
+            "Store contributions per user per campaign",
+            "Check deadline before accepting contributions",
+            "Only allow refunds if goal not met"
+        ],
+        "tags": ["crowdfunding", "fundraising", "platform"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_017",
+        "title": "NFT Marketplace",
+        "description": """Create a marketplace for buying and selling NFTs.
+
+Requirements:
+- List NFTs for sale with price
+- Buy listed NFTs
+- Cancel listings
+- Support royalties for creators
+- Track marketplace fees""",
+        "difficulty": "middle",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC721 {
+    function transferFrom(address from, address to, uint256 tokenId) external;
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
+
+contract NFTMarketplace {
+    struct Listing {
+        address seller;
+        address nftContract;
+        uint256 tokenId;
+        uint256 price;
+        bool active;
+    }
+    
+    mapping(bytes32 => Listing) public listings;
+    uint256 public feePercent = 250; // 2.5%
+    
+    event Listed(bytes32 indexed listingId, address seller, uint256 price);
+    event Sold(bytes32 indexed listingId, address buyer, uint256 price);
+    event Cancelled(bytes32 indexed listingId);
+    
+    // TODO: Implement listNFT
+    function listNFT(
+        address nftContract,
+        uint256 tokenId,
+        uint256 price
+    ) public returns (bytes32) {
+        // Your code here
+    }
+    
+    // TODO: Implement buyNFT
+    function buyNFT(bytes32 listingId) public payable {
+        // Your code here
+        // Calculate fees
+        // Transfer NFT and funds
+    }
+    
+    // TODO: Implement cancelListing
+    function cancelListing(bytes32 listingId) public {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "listNFT",
+                "args": ["0x1234567890123456789012345678901234567890", 1, 1000000000000000000],
+                "expected": "success",
+                "description": "List NFT for sale"
+            }
+        ],
+        "hints": [
+            "Use keccak256 to generate listing ID",
+            "Calculate marketplace fee from price",
+            "Use IERC721.transferFrom for NFT transfer",
+            "Validate seller is owner before listing"
+        ],
+        "tags": ["nft", "marketplace", "trading"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_018",
+        "title": "Vesting Schedule",
+        "description": """Implement a token vesting contract with linear release.
+
+Requirements:
+- Create vesting schedules for beneficiaries
+- Linear vesting over time period
+- Cliff period support
+- Calculate releasable amount
+- Allow beneficiaries to claim vested tokens""",
+        "difficulty": "middle",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract TokenVesting {
+    IERC20 public token;
+    
+    struct VestingSchedule {
+        uint256 totalAmount;
+        uint256 startTime;
+        uint256 cliffDuration;
+        uint256 duration;
+        uint256 released;
+    }
+    
+    mapping(address => VestingSchedule) public schedules;
+    
+    event VestingCreated(address indexed beneficiary, uint256 amount, uint256 duration);
+    event TokensReleased(address indexed beneficiary, uint256 amount);
+    
+    constructor(address _token) {
+        token = IERC20(_token);
+    }
+    
+    // TODO: Implement createVesting
+    function createVesting(
+        address beneficiary,
+        uint256 totalAmount,
+        uint256 cliffDuration,
+        uint256 duration
+    ) public {
+        // Your code here
+    }
+    
+    // TODO: Implement calculateReleasable
+    function calculateReleasable(address beneficiary) public view returns (uint256) {
+        // Your code here
+        // Linear vesting calculation
+    }
+    
+    // TODO: Implement release
+    function release() public {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "createVesting",
+                "args": ["0x1234567890123456789012345678901234567890", 1000000, 2592000, 31536000],
+                "expected": "success",
+                "description": "Create vesting with 30-day cliff, 1-year duration"
+            }
+        ],
+        "hints": [
+            "Use block.timestamp for timing",
+            "Vesting formula: (totalAmount * elapsed) / duration",
+            "Check cliff period before releasing",
+            "Track released amount to calculate remaining"
+        ],
+        "tags": ["vesting", "token-distribution", "time-based"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_019",
+        "title": "Price Oracle",
+        "description": """Build a decentralized price oracle with data aggregation.
+
+Requirements:
+- Multiple data providers can submit prices
+- Calculate median or average price
+- Time-weighted average price (TWAP)
+- Cooldown period between updates
+- Data validity checks""",
+        "difficulty": "middle",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract PriceOracle {
+    struct PriceData {
+        uint256 price;
+        uint256 timestamp;
+    }
+    
+    mapping(address => bool) public isProvider;
+    mapping(address => PriceData) public providerPrices;
+    address[] public providers;
+    
+    uint256 public constant UPDATE_COOLDOWN = 300; // 5 minutes
+    
+    event PriceUpdated(address indexed provider, uint256 price, uint256 timestamp);
+    event ProviderAdded(address indexed provider);
+    
+    // TODO: Implement addProvider
+    function addProvider(address provider) public {
+        // Your code here
+    }
+    
+    // TODO: Implement submitPrice
+    function submitPrice(uint256 price) public {
+        // Your code here
+        // Check is provider
+        // Check cooldown
+    }
+    
+    // TODO: Implement getMedianPrice
+    function getMedianPrice() public view returns (uint256) {
+        // Your code here
+        // Collect prices from all providers
+        // Sort and return median
+    }
+    
+    // TODO: Implement getTWAP
+    function getTWAP(uint256 timeWindow) public view returns (uint256) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "addProvider",
+                "args": ["0x1234567890123456789012345678901234567890"],
+                "expected": "success",
+                "description": "Add price provider"
+            }
+        ],
+        "hints": [
+            "Use median to avoid outliers",
+            "Store historical prices for TWAP",
+            "Implement sorting algorithm",
+            "Validate price freshness with timestamps"
+        ],
+        "tags": ["oracle", "defi", "price-feeds"],
+        "solved_count": 0
+    },
+
+    # Senior Level
+    {
+        "problem_id": "sol_020",
+        "title": "Automated Market Maker (AMM)",
+        "description": """Implement a constant product AMM (x * y = k).
+
+Requirements:
+- Add liquidity and mint LP tokens
+- Remove liquidity and burn LP tokens
+- Swap tokens using constant product formula
+- Calculate optimal swap amounts
+- Handle slippage protection""",
+        "difficulty": "senior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+contract AMM {
+    IERC20 public tokenA;
+    IERC20 public tokenB;
+    
+    uint256 public reserveA;
+    uint256 public reserveB;
+    uint256 public totalLiquidity;
+    
+    mapping(address => uint256) public liquidity;
+    
+    event LiquidityAdded(address indexed provider, uint256 amountA, uint256 amountB);
+    event LiquidityRemoved(address indexed provider, uint256 amountA, uint256 amountB);
+    event Swapped(address indexed trader, uint256 amountIn, uint256 amountOut);
+    
+    constructor(address _tokenA, address _tokenB) {
+        tokenA = IERC20(_tokenA);
+        tokenB = IERC20(_tokenB);
+    }
+    
+    // TODO: Implement addLiquidity
+    function addLiquidity(uint256 amountA, uint256 amountB) public returns (uint256) {
+        // Your code here
+        // Maintain price ratio if pool not empty
+        // Mint LP tokens proportional to contribution
+    }
+    
+    // TODO: Implement removeLiquidity
+    function removeLiquidity(uint256 liquidityAmount) public returns (uint256, uint256) {
+        // Your code here
+    }
+    
+    // TODO: Implement swap
+    function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut) public returns (uint256) {
+        // Your code here
+        // Use formula: amountOut = (amountIn * reserveOut) / (reserveIn + amountIn)
+        // Apply 0.3% fee
+    }
+    
+    // TODO: Implement getAmountOut
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) public pure returns (uint256) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "addLiquidity",
+                "args": [1000, 1000],
+                "expected": "success",
+                "description": "Add initial liquidity"
+            }
+        ],
+        "hints": [
+            "First liquidity: LP = sqrt(amountA * amountB)",
+            "Subsequent: LP = min((amountA * totalLP) / reserveA, ...)",
+            "Constant product: reserveA * reserveB = k",
+            "Apply fee before calculating output"
+        ],
+        "tags": ["amm", "dex", "defi", "advanced"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_021",
+        "title": "Lending Protocol",
+        "description": """Create a lending/borrowing protocol with collateralization.
+
+Requirements:
+- Deposit collateral
+- Borrow against collateral with ratio
+- Repay loans with interest
+- Liquidate undercollateralized positions
+- Track health factor""",
+        "difficulty": "senior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+interface IPriceOracle {
+    function getPrice(address token) external view returns (uint256);
+}
+
+contract LendingProtocol {
+    IPriceOracle public oracle;
+    
+    uint256 public constant COLLATERAL_RATIO = 150; // 150%
+    uint256 public constant LIQUIDATION_THRESHOLD = 120; // 120%
+    uint256 public constant INTEREST_RATE = 500; // 5% APY
+    
+    struct Position {
+        uint256 collateralAmount;
+        address collateralToken;
+        uint256 borrowedAmount;
+        address borrowedToken;
+        uint256 borrowTimestamp;
+    }
+    
+    mapping(address => Position) public positions;
+    
+    event Deposited(address indexed user, address token, uint256 amount);
+    event Borrowed(address indexed user, address token, uint256 amount);
+    event Repaid(address indexed user, uint256 amount, uint256 interest);
+    event Liquidated(address indexed user, address indexed liquidator, uint256 amount);
+    
+    // TODO: Implement deposit
+    function deposit(address token, uint256 amount) public {
+        // Your code here
+    }
+    
+    // TODO: Implement borrow
+    function borrow(address token, uint256 amount) public {
+        // Your code here
+        // Check collateral ratio
+    }
+    
+    // TODO: Implement repay
+    function repay() public {
+        // Your code here
+        // Calculate interest
+    }
+    
+    // TODO: Implement liquidate
+    function liquidate(address user) public {
+        // Your code here
+        // Check health factor < threshold
+    }
+    
+    // TODO: Implement getHealthFactor
+    function getHealthFactor(address user) public view returns (uint256) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "deposit",
+                "args": ["0x1234567890123456789012345678901234567890", 1000],
+                "expected": "success",
+                "description": "Deposit collateral"
+            }
+        ],
+        "hints": [
+            "Health factor = (collateral * price) / (borrowed * price)",
+            "Interest = (borrowed * rate * time) / (365 days * 10000)",
+            "Use oracle for token prices",
+            "Liquidator gets bonus for liquidating"
+        ],
+        "tags": ["lending", "defi", "collateral", "advanced"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_022",
+        "title": "DAO Governance",
+        "description": """Implement a complete DAO governance system with proposals and voting.
+
+Requirements:
+- Create proposals with description and execution data
+- Vote with token-weighted voting power
+- Quorum requirements
+- Timelock for execution
+- Delegate voting power""",
+        "difficulty": "senior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IGovernanceToken {
+    function balanceOf(address account) external view returns (uint256);
+    function delegates(address account) external view returns (address);
+}
+
+contract DAOGovernance {
+    IGovernanceToken public governanceToken;
+    
+    enum ProposalState { Pending, Active, Defeated, Succeeded, Executed }
+    
+    struct Proposal {
+        uint256 id;
+        address proposer;
+        string description;
+        uint256 startBlock;
+        uint256 endBlock;
+        uint256 forVotes;
+        uint256 againstVotes;
+        mapping(address => bool) hasVoted;
+        address target;
+        bytes data;
+        bool executed;
+    }
+    
+    mapping(uint256 => Proposal) public proposals;
+    uint256 public proposalCount;
+    
+    uint256 public constant VOTING_PERIOD = 17280; // ~3 days in blocks
+    uint256 public constant QUORUM_VOTES = 100000e18; // 100k tokens
+    
+    event ProposalCreated(uint256 indexed proposalId, address proposer, string description);
+    event Voted(uint256 indexed proposalId, address voter, bool support, uint256 votes);
+    event ProposalExecuted(uint256 indexed proposalId);
+    
+    constructor(address _governanceToken) {
+        governanceToken = IGovernanceToken(_governanceToken);
+    }
+    
+    // TODO: Implement propose
+    function propose(
+        string memory description,
+        address target,
+        bytes memory data
+    ) public returns (uint256) {
+        // Your code here
+    }
+    
+    // TODO: Implement vote
+    function vote(uint256 proposalId, bool support) public {
+        // Your code here
+        // Get voting power from token balance
+    }
+    
+    // TODO: Implement execute
+    function execute(uint256 proposalId) public {
+        // Your code here
+        // Check quorum met
+        // Check more for votes than against
+    }
+    
+    // TODO: Implement getProposalState
+    function getProposalState(uint256 proposalId) public view returns (ProposalState) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "propose",
+                "args": ["Increase rewards", "0x1234567890123456789012345678901234567890", "0x"],
+                "expected": "success",
+                "description": "Create proposal"
+            }
+        ],
+        "hints": [
+            "Use block.number for voting periods",
+            "Store voting power at proposal creation",
+            "Check quorum: total votes >= QUORUM_VOTES",
+            "Use .call() for proposal execution"
+        ],
+        "tags": ["dao", "governance", "voting", "advanced"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_023",
+        "title": "Cross-Chain Bridge",
+        "description": """Build a cross-chain token bridge with lock/mint mechanism.
+
+Requirements:
+- Lock tokens on source chain
+- Mint wrapped tokens on destination chain
+- Burn wrapped tokens to unlock on source
+- Validator signatures for security
+- Handle failed transactions""",
+        "difficulty": "senior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+    function burn(uint256 amount) external;
+    function mint(address to, uint256 amount) external;
+}
+
+contract CrossChainBridge {
+    address public admin;
+    mapping(address => bool) public validators;
+    uint256 public requiredSignatures = 3;
+    
+    struct Transfer {
+        address token;
+        address from;
+        address to;
+        uint256 amount;
+        uint256 nonce;
+        bool processed;
+    }
+    
+    mapping(bytes32 => Transfer) public transfers;
+    mapping(bytes32 => mapping(address => bool)) public signatures;
+    mapping(bytes32 => uint256) public signatureCount;
+    
+    event TransferInitiated(bytes32 indexed transferId, address token, address from, uint256 amount);
+    event TransferCompleted(bytes32 indexed transferId, address to, uint256 amount);
+    
+    // TODO: Implement lock
+    function lock(address token, uint256 amount, address recipient) public returns (bytes32) {
+        // Your code here
+        // Lock tokens on this chain
+        // Generate transfer ID
+    }
+    
+    // TODO: Implement sign
+    function sign(bytes32 transferId) public {
+        // Your code here
+        // Validators sign to approve
+    }
+    
+    // TODO: Implement mint
+    function mint(bytes32 transferId) public {
+        // Your code here
+        // Check signature threshold met
+        // Mint wrapped tokens
+    }
+    
+    // TODO: Implement burn
+    function burn(address token, uint256 amount) public returns (bytes32) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "lock",
+                "args": ["0x1234567890123456789012345678901234567890", 1000, "0x2234567890123456789012345678901234567890"],
+                "expected": "success",
+                "description": "Lock tokens for bridging"
+            }
+        ],
+        "hints": [
+            "Generate transferId with keccak256(token, from, to, amount, nonce)",
+            "Use multi-sig pattern for validator consensus",
+            "Store locked tokens in contract",
+            "Emit events for relayers to detect"
+        ],
+        "tags": ["bridge", "cross-chain", "interoperability", "advanced"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_024",
+        "title": "Yield Farming Vault",
+        "description": """Create an auto-compounding yield farming vault.
+
+Requirements:
+- Deposit LP tokens
+- Auto-harvest rewards
+- Auto-compound rewards back to LP
+- Calculate share price
+- Withdraw with proportional rewards""",
+        "difficulty": "senior",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+interface IFarm {
+    function deposit(uint256 amount) external;
+    function withdraw(uint256 amount) external;
+    function harvest() external returns (uint256);
+}
+
+contract YieldVault {
+    IERC20 public lpToken;
+    IERC20 public rewardToken;
+    IFarm public farm;
+    
+    uint256 public totalShares;
+    mapping(address => uint256) public shares;
+    
+    uint256 public lastHarvest;
+    uint256 public constant HARVEST_INTERVAL = 4 hours;
+    
+    event Deposited(address indexed user, uint256 amount, uint256 shares);
+    event Withdrawn(address indexed user, uint256 amount, uint256 shares);
+    event Harvested(uint256 rewards);
+    
+    constructor(address _lpToken, address _rewardToken, address _farm) {
+        lpToken = IERC20(_lpToken);
+        rewardToken = IERC20(_rewardToken);
+        farm = IFarm(_farm);
+    }
+    
+    // TODO: Implement deposit
+    function deposit(uint256 amount) public returns (uint256) {
+        // Your code here
+        // Calculate shares based on current vault value
+    }
+    
+    // TODO: Implement withdraw
+    function withdraw(uint256 shareAmount) public returns (uint256) {
+        // Your code here
+        // Calculate LP amount from shares
+    }
+    
+    // TODO: Implement harvest
+    function harvest() public {
+        // Your code here
+        // Harvest rewards from farm
+        // Convert to LP and deposit back
+    }
+    
+    // TODO: Implement getSharePrice
+    function getSharePrice() public view returns (uint256) {
+        // Your code here
+        // Total value / total shares
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "deposit",
+                "args": [1000],
+                "expected": "success",
+                "description": "Deposit LP tokens"
+            }
+        ],
+        "hints": [
+            "First deposit: shares = amount",
+            "Subsequent: shares = (amount * totalShares) / totalValue",
+            "Auto-compound increases value without changing shares",
+            "Withdrawal: amount = (shares * totalValue) / totalShares"
+        ],
+        "tags": ["yield-farming", "defi", "auto-compound", "vault"],
+        "solved_count": 0
+    },
+
+    # Expert Level
+    {
+        "problem_id": "sol_025",
+        "title": "Options Trading Protocol",
+        "description": """Implement a decentralized options trading protocol.
+
+Requirements:
+- Create call/put options with strike price and expiry
+- Buy and sell options
+- Exercise options when profitable
+- Automatic settlement at expiry
+- Collateral management""",
+        "difficulty": "expert",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+interface IPriceOracle {
+    function getPrice(address token) external view returns (uint256);
+}
+
+contract OptionsProtocol {
+    IPriceOracle public oracle;
+    
+    enum OptionType { Call, Put }
+    enum OptionState { Active, Exercised, Expired }
+    
+    struct Option {
+        OptionType optionType;
+        address underlying;
+        address strikeToken;
+        uint256 strikePrice;
+        uint256 expiry;
+        uint256 amount;
+        address writer;
+        address holder;
+        OptionState state;
+    }
+    
+    mapping(uint256 => Option) public options;
+    uint256 public optionCount;
+    
+    event OptionCreated(uint256 indexed optionId, OptionType optionType, uint256 strikePrice);
+    event OptionExercised(uint256 indexed optionId, address holder, uint256 profit);
+    event OptionExpired(uint256 indexed optionId);
+    
+    constructor(address _oracle) {
+        oracle = IPriceOracle(_oracle);
+    }
+    
+    // TODO: Implement createOption
+    function createOption(
+        OptionType optionType,
+        address underlying,
+        address strikeToken,
+        uint256 strikePrice,
+        uint256 expiry,
+        uint256 amount
+    ) public returns (uint256) {
+        // Your code here
+        // Writer must provide collateral
+    }
+    
+    // TODO: Implement buyOption
+    function buyOption(uint256 optionId, uint256 premium) public {
+        // Your code here
+    }
+    
+    // TODO: Implement exerciseOption
+    function exerciseOption(uint256 optionId) public {
+        // Your code here
+        // Check if in the money
+        // Calculate profit
+        // Transfer funds
+    }
+    
+    // TODO: Implement calculateOptionValue
+    function calculateOptionValue(uint256 optionId) public view returns (uint256) {
+        // Your code here
+        // Intrinsic value calculation
+    }
+    
+    // TODO: Implement settleExpired
+    function settleExpired(uint256 optionId) public {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "createOption",
+                "args": [0, "0x1234567890123456789012345678901234567890", "0x2234567890123456789012345678901234567890", 2000, 1735689600, 100],
+                "expected": "success",
+                "description": "Create call option"
+            }
+        ],
+        "hints": [
+            "Call option: profit = max(currentPrice - strikePrice, 0) * amount",
+            "Put option: profit = max(strikePrice - currentPrice, 0) * amount",
+            "Writer must lock collateral for full exposure",
+            "Use oracle for current price",
+            "Check expiry with block.timestamp"
+        ],
+        "tags": ["options", "derivatives", "defi", "expert"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "sol_026",
+        "title": "MEV Protection Layer",
+        "description": """Design a MEV protection mechanism using batch auctions and fair ordering.
+
+Requirements:
+- Batch orders into discrete auctions
+- Fair ordering within batches
+- Price improvement from MEV capture
+- Protect against frontrunning and sandwiching
+- Implement threshold encryption for order privacy""",
+        "difficulty": "expert",
+        "category": "solidity",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MEVProtection {
+    struct Order {
+        address trader;
+        address tokenIn;
+        address tokenOut;
+        uint256 amountIn;
+        uint256 minAmountOut;
+        bytes32 commitment;
+        bool revealed;
+        bool executed;
+    }
+    
+    struct Batch {
+        uint256 startBlock;
+        uint256 endBlock;
+        uint256 orderCount;
+        mapping(uint256 => Order) orders;
+        bool finalized;
+    }
+    
+    mapping(uint256 => Batch) public batches;
+    uint256 public currentBatch;
+    uint256 public constant BATCH_DURATION = 5; // blocks
+    
+    event OrderCommitted(uint256 indexed batchId, uint256 indexed orderId, bytes32 commitment);
+    event OrderRevealed(uint256 indexed batchId, uint256 indexed orderId);
+    event BatchFinalized(uint256 indexed batchId, uint256 orderCount);
+    
+    // TODO: Implement commitOrder
+    function commitOrder(bytes32 commitment) public returns (uint256) {
+        // Your code here
+        // Create order with commitment
+        // Check batch timing
+    }
+    
+    // TODO: Implement revealOrder
+    function revealOrder(
+        uint256 batchId,
+        uint256 orderId,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut,
+        bytes32 salt
+    ) public {
+        // Your code here
+        // Verify commitment
+        // Can only reveal after batch commit phase
+    }
+    
+    // TODO: Implement finalizeBatch
+    function finalizeBatch(uint256 batchId) public {
+        // Your code here
+        // Sort orders fairly (e.g., by gas price or randomly)
+        // Execute in fair order
+        // Distribute any captured MEV
+    }
+    
+    // TODO: Implement verifyCommitment
+    function verifyCommitment(
+        bytes32 commitment,
+        address trader,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut,
+        bytes32 salt
+    ) internal pure returns (bool) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "commitOrder",
+                "args": ["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"],
+                "expected": "success",
+                "description": "Commit order to batch"
+            }
+        ],
+        "hints": [
+            "Use commit-reveal to hide order details",
+            "Batch duration prevents immediate execution",
+            "Fair ordering: random shuffle or FIFO within batch",
+            "Capture MEV by executing profitable orders first, distribute gains",
+            "Use VRF or block hash for randomness"
+        ],
+        "tags": ["mev", "protection", "fairness", "expert"],
+        "solved_count": 0
+    },
+
+    # ============== ADDITIONAL RUST (SOLANA) PROBLEMS ==============
+    # Junior Level
+    {
+        "problem_id": "rust_003",
+        "title": "Solana Counter Program",
+        "description": """Create a simple counter program on Solana.
+
+Requirements:
+- Initialize counter account
+- Increment counter
+- Decrement counter  
+- Reset counter
+- Get current count""",
+        "difficulty": "junior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+
+declare_id!("CounterProgramID");
+
+#[program]
+pub mod counter {
+    use super::*;
+
+    // TODO: Implement initialize
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement increment
+    pub fn increment(ctx: Context<Update>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement decrement
+    pub fn decrement(ctx: Context<Update>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct Update<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct Counter {
+    // TODO: Define data structure
+}""",
+        "test_cases": [
+            {"input": "initialize()", "expected": "counter created"},
+            {"input": "increment()", "expected": "count = 1"},
+            {"input": "increment()", "expected": "count = 2"},
+            {"input": "decrement()", "expected": "count = 1"}
+        ],
+        "hints": [
+            "Use #[account(init)] for initialization",
+            "Store count as u64",
+            "Use mut for mutable accounts",
+            "Add overflow checks"
+        ],
+        "tags": ["solana", "anchor", "basics", "counter"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_004",
+        "title": "Solana NFT Minter",
+        "description": """Build an NFT minting program on Solana.
+
+Requirements:
+- Mint NFT with metadata
+- Use Metaplex Token Metadata standard
+- Set creator royalties
+- Update metadata (with authority)
+- Transfer NFT""",
+        "difficulty": "junior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Mint};
+use mpl_token_metadata::state::{Metadata, Creator};
+
+declare_id!("NFTMinterProgramID");
+
+#[program]
+pub mod nft_minter {
+    use super::*;
+
+    // TODO: Implement mint_nft
+    pub fn mint_nft(
+        ctx: Context<MintNFT>,
+        name: String,
+        symbol: String,
+        uri: String,
+    ) -> Result<()> {
+        // Your code here
+        // Create mint account
+        // Create metadata account
+        // Mint one token
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct MintNFT<'info> {
+    // TODO: Define accounts
+    // mint, token_account, metadata, etc.
+}""",
+        "test_cases": [
+            {"input": "mint_nft('CodeChain NFT', 'CC', 'ipfs://...')", "expected": "NFT minted"},
+            {"input": "check supply", "expected": "supply = 1"},
+            {"input": "check decimals", "expected": "decimals = 0"}
+        ],
+        "hints": [
+            "Use Metaplex Token Metadata program",
+            "NFT: supply = 1, decimals = 0",
+            "Store metadata on-chain or IPFS",
+            "Set seller_fee_basis_points for royalties"
+        ],
+        "tags": ["solana", "nft", "metaplex", "minting"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_005",
+        "title": "Solana Escrow Program",
+        "description": """Create an escrow program for atomic swaps on Solana.
+
+Requirements:
+- Initialize escrow with two parties
+- Party A deposits tokens
+- Party B can accept and complete swap
+- Cancel escrow before acceptance
+- Handle PDA for escrow authority""",
+        "difficulty": "junior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("EscrowProgramID");
+
+#[program]
+pub mod escrow {
+    use super::*;
+
+    // TODO: Implement initialize_escrow
+    pub fn initialize_escrow(
+        ctx: Context<InitializeEscrow>,
+        expected_amount: u64,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement exchange
+    pub fn exchange(ctx: Context<Exchange>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement cancel
+    pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializeEscrow<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct Exchange<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct Cancel<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct EscrowAccount {
+    // TODO: Define data structure
+}""",
+        "test_cases": [
+            {"input": "initialize_escrow(1000)", "expected": "escrow created"},
+            {"input": "exchange()", "expected": "tokens swapped"},
+            {"input": "cancel()", "expected": "escrow cancelled, tokens returned"}
+        ],
+        "hints": [
+            "Use PDA for escrow authority",
+            "Seeds: [b'escrow', initializer.key().as_ref()]",
+            "Transfer tokens to escrow account",
+            "Use CPI for token transfers"
+        ],
+        "tags": ["solana", "escrow", "swap", "pda"],
+        "solved_count": 0
+    },
+
+    # Middle Level
+    {
+        "problem_id": "rust_006",
+        "title": "Solana Token Staking",
+        "description": """Implement a token staking program with rewards on Solana.
+
+Requirements:
+- Stake SPL tokens
+- Calculate time-based rewards
+- Claim rewards
+- Unstake tokens
+- Track total staked""",
+        "difficulty": "middle",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("StakingProgramID");
+
+#[program]
+pub mod staking {
+    use super::*;
+
+    // TODO: Implement stake
+    pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement claim_rewards
+    pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
+        // Your code here
+        // Calculate rewards based on time and amount
+        Ok(())
+    }
+
+    // TODO: Implement unstake
+    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct Stake<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct ClaimRewards<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct Unstake<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct StakeAccount {
+    // TODO: Define data structure
+    // owner, amount, stake_timestamp, etc.
+}""",
+        "test_cases": [
+            {"input": "stake(1000)", "expected": "tokens staked"},
+            {"input": "wait 1 day", "expected": "rewards accumulated"},
+            {"input": "claim_rewards()", "expected": "rewards transferred"},
+            {"input": "unstake()", "expected": "tokens returned"}
+        ],
+        "hints": [
+            "Use Clock sysvar for timestamps",
+            "Reward calculation: (amount * rate * time_elapsed) / time_unit",
+            "Store stake_timestamp when staking",
+            "Update rewards before unstaking"
+        ],
+        "tags": ["solana", "staking", "rewards", "defi"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_007",
+        "title": "Solana NFT Collection Manager",
+        "description": """Build a program to manage NFT collections with minting controls.
+
+Requirements:
+- Create collection with max supply
+- Mint NFTs from collection
+- Enforce mint limits
+- Update collection metadata
+- Track minted count""",
+        "difficulty": "middle",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, Mint, TokenAccount};
+use mpl_token_metadata::state::Collection;
+
+declare_id!("NFTCollectionProgramID");
+
+#[program]
+pub mod nft_collection {
+    use super::*;
+
+    // TODO: Implement create_collection
+    pub fn create_collection(
+        ctx: Context<CreateCollection>,
+        name: String,
+        symbol: String,
+        uri: String,
+        max_supply: u64,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement mint_from_collection
+    pub fn mint_from_collection(
+        ctx: Context<MintFromCollection>,
+        name: String,
+        uri: String,
+    ) -> Result<()> {
+        // Your code here
+        // Check max supply not exceeded
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct CreateCollection<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct MintFromCollection<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct CollectionAccount {
+    // TODO: Define data structure
+}""",
+        "test_cases": [
+            {"input": "create_collection('MyNFTs', 'MNFT', 'uri', 10000)", "expected": "collection created"},
+            {"input": "mint_from_collection('NFT #1', 'uri1')", "expected": "NFT minted"},
+            {"input": "mint when max reached", "expected": "error: max supply reached"}
+        ],
+        "hints": [
+            "Store max_supply and minted_count",
+            "Check minted_count < max_supply before minting",
+            "Use Metaplex collection standard",
+            "Link NFTs to collection with collection field"
+        ],
+        "tags": ["solana", "nft", "collection", "metaplex"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_008",
+        "title": "Solana Voting DAO",
+        "description": """Create a DAO governance program with proposal voting.
+
+Requirements:
+- Create proposals
+- Vote with token-weighted power
+- Execute proposals when passed
+- Quorum requirements
+- Timelock for execution""",
+        "difficulty": "middle",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount};
+
+declare_id!("VotingDAOProgramID");
+
+#[program]
+pub mod voting_dao {
+    use super::*;
+
+    // TODO: Implement create_proposal
+    pub fn create_proposal(
+        ctx: Context<CreateProposal>,
+        description: String,
+        execution_data: Vec<u8>,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement vote
+    pub fn vote(
+        ctx: Context<Vote>,
+        proposal_id: u64,
+        support: bool,
+    ) -> Result<()> {
+        // Your code here
+        // Get voting power from token balance
+        Ok(())
+    }
+
+    // TODO: Implement execute_proposal
+    pub fn execute_proposal(ctx: Context<ExecuteProposal>, proposal_id: u64) -> Result<()> {
+        // Your code here
+        // Check quorum met and votes pass
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct CreateProposal<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct Vote<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct ExecuteProposal<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct Proposal {
+    // TODO: Define data structure
+}""",
+        "test_cases": [
+            {"input": "create_proposal('Increase rewards', data)", "expected": "proposal created"},
+            {"input": "vote(0, true)", "expected": "voted yes"},
+            {"input": "execute_proposal(0)", "expected": "proposal executed"}
+        ],
+        "hints": [
+            "Use Clock for voting periods",
+            "Store for_votes and against_votes",
+            "Get voting power from governance token balance",
+            "Check quorum: total_votes >= required_quorum"
+        ],
+        "tags": ["solana", "dao", "governance", "voting"],
+        "solved_count": 0
+    },
+
+    # Senior Level
+    {
+        "problem_id": "rust_009",
+        "title": "Serum DEX Integration",
+        "description": """Integrate with Serum DEX for trading on Solana.
+
+Requirements:
+- Place limit orders
+- Place market orders
+- Cancel orders
+- Settle funds
+- Query order book""",
+        "difficulty": "senior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount};
+use serum_dex::state::MarketState;
+
+declare_id!("SerumIntegrationProgramID");
+
+#[program]
+pub mod serum_integration {
+    use super::*;
+
+    // TODO: Implement place_order
+    pub fn place_order(
+        ctx: Context<PlaceOrder>,
+        side: u8, // 0 = Bid, 1 = Ask
+        limit_price: u64,
+        max_quantity: u64,
+    ) -> Result<()> {
+        // Your code here
+        // CPI to Serum DEX
+        Ok(())
+    }
+
+    // TODO: Implement cancel_order
+    pub fn cancel_order(
+        ctx: Context<CancelOrder>,
+        order_id: u128,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement settle_funds
+    pub fn settle_funds(ctx: Context<SettleFunds>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct PlaceOrder<'info> {
+    // TODO: Define accounts
+    // market, open_orders, etc.
+}
+
+#[derive(Accounts)]
+pub struct CancelOrder<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct SettleFunds<'info> {
+    // TODO: Define accounts
+}""",
+        "test_cases": [
+            {"input": "place_order(BID, 100, 10)", "expected": "order placed"},
+            {"input": "cancel_order(order_id)", "expected": "order cancelled"},
+            {"input": "settle_funds()", "expected": "funds settled"}
+        ],
+        "hints": [
+            "Use Serum DEX program ID for CPI",
+            "Open orders account tracks user's orders",
+            "Settle funds after orders fill",
+            "Use serum_dex crate for instructions"
+        ],
+        "tags": ["solana", "serum", "dex", "trading", "advanced"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "rust_010",
+        "title": "Solana Token Vesting",
+        "description": """Implement a token vesting program with linear release.
+
+Requirements:
+- Create vesting schedules
+- Linear vesting calculation
+- Cliff period support
+- Release vested tokens
+- Cancel vesting (return unvested)""",
+        "difficulty": "senior",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("VestingProgramID");
+
+#[program]
+pub mod vesting {
+    use super::*;
+
+    // TODO: Implement create_vesting
+    pub fn create_vesting(
+        ctx: Context<CreateVesting>,
+        total_amount: u64,
+        start_time: i64,
+        cliff_duration: i64,
+        vesting_duration: i64,
+    ) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+
+    // TODO: Implement release
+    pub fn release(ctx: Context<Release>) -> Result<()> {
+        // Your code here
+        // Calculate vested amount
+        // Transfer releasable tokens
+        Ok(())
+    }
+
+    // TODO: Implement cancel_vesting
+    pub fn cancel_vesting(ctx: Context<CancelVesting>) -> Result<()> {
+        // Your code here
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct CreateVesting<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct Release<'info> {
+    // TODO: Define accounts
+}
+
+#[derive(Accounts)]
+pub struct CancelVesting<'info> {
+    // TODO: Define accounts
+}
+
+#[account]
+pub struct VestingAccount {
+    // TODO: Define data structure
+}""",
+        "test_cases": [
+            {"input": "create_vesting(10000, now, 30days, 365days)", "expected": "vesting created"},
+            {"input": "release() before cliff", "expected": "0 tokens released"},
+            {"input": "release() after 6 months", "expected": "~5000 tokens released"}
+        ],
+        "hints": [
+            "Use Clock sysvar for time",
+            "Vested = (total * (now - start)) / duration",
+            "Check now >= start + cliff before releasing",
+            "Track released_amount to calculate remaining"
+        ],
+        "tags": ["solana", "vesting", "token-distribution", "timelock"],
+        "solved_count": 0
+    },
+
+    # Expert Level
+    {
+        "problem_id": "rust_011",
+        "title": "Solana Flash Loan Program",
+        "description": """Build a flash loan program on Solana.
+
+Requirements:
+- Borrow any amount within transaction
+- Execute custom instructions with borrowed funds
+- Repay loan with fee in same transaction
+- Revert if not repaid
+- Support multiple tokens""",
+        "difficulty": "expert",
+        "category": "rust",
+        "initial_code": """use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+
+declare_id!("FlashLoanProgramID");
+
+#[program]
+pub mod flash_loan {
+    use super::*;
+
+    // TODO: Implement flash_loan
+    pub fn flash_loan(
+        ctx: Context<FlashLoan>,
+        amount: u64,
+        instructions: Vec<Instruction>,
+    ) -> Result<()> {
+        // Your code here
+        // 1. Transfer loan amount to borrower
+        // 2. Execute provided instructions via CPI
+        // 3. Verify repayment + fee
+        // 4. Revert if not repaid
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct FlashLoan<'info> {
+    // TODO: Define accounts
+    #[account(mut)]
+    pub pool: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub borrower: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct Instruction {
+    pub program_id: Pubkey,
+    pub accounts: Vec<AccountMeta>,
+    pub data: Vec<u8>,
+}""",
+        "test_cases": [
+            {"input": "flash_loan(10000, [arbitrage_ix])", "expected": "loan executed"},
+            {"input": "flash_loan without repayment", "expected": "transaction reverted"}
+        ],
+        "hints": [
+            "Check pool balance before and after",
+            "Required: balance_after >= balance_before + fee",
+            "Use invoke() for CPIs to custom programs",
+            "Fee calculation: amount * fee_bps / 10000",
+            "All must happen in single transaction for atomicity"
+        ],
+        "tags": ["solana", "flash-loan", "defi", "expert", "advanced"],
+        "solved_count": 0
+    },
+
+    # ============== ADDITIONAL FUNC (TON) PROBLEMS ==============
+    # Junior Level
+    {
+        "problem_id": "func_003",
+        "title": "TON Simple Wallet",
+        "description": """Create a basic wallet contract on TON blockchain.
+
+Requirements:
+- Receive TON coins
+- Send TON coins with owner signature
+- Get balance
+- Validate seqno for replay protection
+- Support bounce messages""",
+        "difficulty": "junior",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage: (seqno, public_key)
+(int, int) load_data() inline {
+    ;; TODO: Load from storage
+}
+
+() save_data(int seqno, int public_key) impure inline {
+    ;; TODO: Save to storage
+}
+
+;; TODO: Implement recv_internal
+() recv_internal(int msg_value, cell in_msg, slice in_msg_body) impure {
+    ;; Accept incoming TON
+}
+
+;; TODO: Implement recv_external
+() recv_external(slice in_msg) impure {
+    ;; Verify signature and send TON
+    ;; Check seqno
+    ;; Send message
+}
+
+;; TODO: Implement get_seqno
+int seqno() method_id {
+    ;; Return current seqno
+}
+
+;; TODO: Implement get_balance
+int balance() method_id {
+    ;; Return contract balance
+}""",
+        "test_cases": [
+            {"input": "send TON to wallet", "expected": "balance increased"},
+            {"input": "send_from_wallet(dest, amount, seqno, signature)", "expected": "TON sent"},
+            {"input": "replay same seqno", "expected": "rejected"}
+        ],
+        "hints": [
+            "Use recv_internal for incoming messages",
+            "Use recv_external for signed transactions",
+            "Increment seqno after each transaction",
+            "Verify signature with check_signature",
+            "Use send_raw_message to send TON"
+        ],
+        "tags": ["ton", "func", "wallet", "basics"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "func_004",
+        "title": "TON Token Contract",
+        "description": """Implement a basic fungible token on TON.
+
+Requirements:
+- Mint tokens (owner only)
+- Transfer tokens
+- Get balance
+- Get total supply
+- Burn tokens""",
+        "difficulty": "junior",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage: (total_supply, owner_address, balances_dict)
+global int ctx_total_supply;
+global int ctx_owner;
+global cell ctx_balances;
+
+() load_data() impure {
+    ;; TODO: Load from storage
+}
+
+() save_data() impure {
+    ;; TODO: Save to storage
+}
+
+;; TODO: Implement mint
+() mint(slice to, int amount) impure {
+    ;; Check sender is owner
+    ;; Increase balance
+    ;; Increase total supply
+}
+
+;; TODO: Implement transfer
+() transfer(slice from, slice to, int amount) impure {
+    ;; Check balance sufficient
+    ;; Decrease from balance
+    ;; Increase to balance
+}
+
+;; TODO: Implement balance_of
+int balance_of(slice address) method_id {
+    ;; Return balance
+}
+
+;; TODO: Implement total_supply
+int total_supply() method_id {
+    ;; Return total supply
+}""",
+        "test_cases": [
+            {"input": "mint(addr, 1000)", "expected": "balance = 1000"},
+            {"input": "transfer(from, to, 500)", "expected": "balances updated"},
+            {"input": "total_supply()", "expected": "1000"}
+        ],
+        "hints": [
+            "Use dict to store balances",
+            "Use udict_get and udict_set for balance operations",
+            "Check sender authority for mint",
+            "Validate sufficient balance before transfer"
+        ],
+        "tags": ["ton", "func", "token", "fungible"],
+        "solved_count": 0
+    },
+
+    # Middle Level
+    {
+        "problem_id": "func_005",
+        "title": "TON Jetton Standard",
+        "description": """Implement the TEP-74 Jetton standard on TON.
+
+Requirements:
+- Jetton master contract
+- Jetton wallet contract
+- Transfer with notification
+- Burn tokens
+- Get wallet address""",
+        "difficulty": "middle",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Jetton Master Contract
+
+;; Storage: (total_supply, admin_address, content, jetton_wallet_code)
+global int ctx_total_supply;
+global slice ctx_admin;
+global cell ctx_content;
+global cell ctx_jetton_wallet_code;
+
+() load_data() impure {
+    ;; TODO: Load storage
+}
+
+() save_data() impure {
+    ;; TODO: Save storage
+}
+
+;; TODO: Implement mint
+() mint(slice to, int amount, cell master_msg) impure {
+    ;; Deploy or update jetton wallet
+    ;; Send mint message to wallet
+}
+
+;; TODO: Implement get_wallet_address
+slice get_wallet_address(slice owner) method_id {
+    ;; Calculate and return jetton wallet address for owner
+}
+
+;; Jetton Wallet Contract
+
+;; Storage: (balance, owner, jetton_master)
+global int ctx_balance;
+global slice ctx_owner;
+global slice ctx_jetton_master;
+
+;; TODO: Implement transfer
+() transfer(slice to, int amount, slice forward_payload) impure {
+    ;; Transfer tokens
+    ;; Send notification if payload provided
+}
+
+;; TODO: Implement burn
+() burn(int amount) impure {
+    ;; Burn tokens
+    ;; Notify master contract
+}""",
+        "test_cases": [
+            {"input": "deploy master", "expected": "jetton master created"},
+            {"input": "mint(user, 1000)", "expected": "jetton wallet created, balance = 1000"},
+            {"input": "transfer(to, 500, payload)", "expected": "transfer with notification"}
+        ],
+        "hints": [
+            "Use TEP-74 standard message layouts",
+            "Calculate wallet address deterministically",
+            "Use op codes: transfer = 0xf8a7ea5, burn = 0x595f07bc",
+            "Forward payload for notifications"
+        ],
+        "tags": ["ton", "func", "jetton", "standard"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "func_006",
+        "title": "TON NFT Collection",
+        "description": """Build an NFT collection contract following TEP-62.
+
+Requirements:
+- Collection master contract
+- Mint NFTs with sequential IDs
+- NFT item contract
+- Get NFT address by index
+- Support metadata""",
+        "difficulty": "middle",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; NFT Collection Contract
+
+;; Storage: (owner, next_item_index, content, nft_item_code, royalty_params)
+global slice ctx_owner;
+global int ctx_next_item_index;
+global cell ctx_content;
+global cell ctx_nft_item_code;
+
+() load_data() impure {
+    ;; TODO: Load storage
+}
+
+() save_data() impure {
+    ;; TODO: Save storage
+}
+
+;; TODO: Implement mint_nft
+() mint_nft(slice to, cell content) impure {
+    ;; Deploy NFT item contract
+    ;; Increment next_item_index
+}
+
+;; TODO: Implement get_nft_address_by_index
+slice get_nft_address_by_index(int index) method_id {
+    ;; Calculate and return NFT address
+}
+
+;; NFT Item Contract
+
+;; Storage: (index, collection_address, owner_address, content)
+global int ctx_index;
+global slice ctx_collection;
+global slice ctx_owner;
+global cell ctx_content;
+
+;; TODO: Implement transfer
+() transfer(slice new_owner, slice response_destination) impure {
+    ;; Transfer ownership
+    ;; Send excess to response_destination
+}
+
+;; TODO: Implement get_nft_data
+(int, int, slice, slice, cell) get_nft_data() method_id {
+    ;; Return (init?, index, collection, owner, content)
+}""",
+        "test_cases": [
+            {"input": "mint_nft(user, metadata)", "expected": "NFT #0 created"},
+            {"input": "mint_nft(user, metadata)", "expected": "NFT #1 created"},
+            {"input": "transfer(new_owner)", "expected": "ownership transferred"}
+        ],
+        "hints": [
+            "Follow TEP-62 NFT standard",
+            "Use TEP-64 for metadata",
+            "Calculate address with create_address",
+            "Op code for transfer: 0x5fcc3d14"
+        ],
+        "tags": ["ton", "func", "nft", "collection"],
+        "solved_count": 0
+    },
+
+    # Senior Level
+    {
+        "problem_id": "func_007",
+        "title": "TON DAO Governance",
+        "description": """Create a DAO governance system on TON.
+
+Requirements:
+- Create proposals
+- Vote with jetton-weighted power
+- Execute proposals when passed
+- Quorum and threshold requirements
+- Timelock for execution""",
+        "difficulty": "senior",
+        "category": "func",
+        "initial_code": """#include "stdlib.fc";
+
+;; Storage: (admin, governance_token, proposal_count, proposals_dict, quorum, threshold)
+global slice ctx_admin;
+global slice ctx_governance_token;
+global int ctx_proposal_count;
+global cell ctx_proposals;
+global int ctx_quorum;
+global int ctx_threshold;
+
+() load_data() impure {
+    ;; TODO: Load storage
+}
+
+() save_data() impure {
+    ;; TODO: Save storage
+}
+
+;; TODO: Implement create_proposal
+() create_proposal(slice proposer, cell description, cell execution_data, int voting_end_time) impure {
+    ;; Create new proposal
+    ;; Store in proposals dict
+    ;; Increment proposal_count
+}
+
+;; TODO: Implement vote
+() vote(int proposal_id, slice voter, int support) impure {
+    ;; Get voter's token balance
+    ;; Record vote
+    ;; Update vote counts
+}
+
+;; TODO: Implement execute_proposal
+() execute_proposal(int proposal_id) impure {
+    ;; Check voting ended
+    ;; Check quorum met
+    ;; Check threshold passed
+    ;; Execute proposal code
+}
+
+;; TODO: Implement get_proposal_state
+(int, int, int, int) get_proposal_state(int proposal_id) method_id {
+    ;; Return (for_votes, against_votes, quorum_met, passed)
+}""",
+        "test_cases": [
+            {"input": "create_proposal(data)", "expected": "proposal created"},
+            {"input": "vote(0, voter, true)", "expected": "vote recorded"},
+            {"input": "execute_proposal(0)", "expected": "proposal executed"}
+        ],
+        "hints": [
+            "Query governance token contract for balance",
+            "Store proposals in dict with ID as key",
+            "Quorum: total_votes >= quorum_amount",
+            "Threshold: for_votes > (total_votes * threshold / 100)",
+            "Use now() for time checks"
+        ],
+        "tags": ["ton", "func", "dao", "governance"],
+        "solved_count": 0
+    },
+
+    # ============== ADDITIONAL CRYPTOGRAPHY PROBLEMS ==============
+    # Middle Level
+    {
+        "problem_id": "crypto_008",
+        "title": "Merkle Tree Airdrop Verifier",
+        "description": """Implement an airdrop system using Merkle trees for efficient verification.
+
+Requirements:
+- Generate Merkle root from distribution list
+- Verify Merkle proofs on-chain
+- Prevent double claims
+- Support large airdrop lists (100k+ addresses)
+- Gas-efficient verification""",
+        "difficulty": "middle",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract MerkleAirdrop {
+    IERC20 public token;
+    bytes32 public merkleRoot;
+    mapping(address => bool) public hasClaimed;
+    
+    event Claimed(address indexed user, uint256 amount);
+    event MerkleRootUpdated(bytes32 newRoot);
+    
+    constructor(address _token, bytes32 _merkleRoot) {
+        token = IERC20(_token);
+        merkleRoot = _merkleRoot;
+    }
+    
+    // TODO: Implement claim
+    function claim(uint256 amount, bytes32[] calldata proof) external {
+        // Your code here
+        // 1. Check not already claimed
+        // 2. Verify Merkle proof
+        // 3. Mark as claimed
+        // 4. Transfer tokens
+    }
+    
+    // TODO: Implement verifyProof
+    function verifyProof(
+        bytes32[] calldata proof,
+        bytes32 leaf
+    ) internal view returns (bool) {
+        // Your code here
+        // Reconstruct root from leaf and proof
+        // Compare with stored merkleRoot
+    }
+    
+    // TODO: Implement hashLeaf
+    function hashLeaf(address account, uint256 amount) internal pure returns (bytes32) {
+        // Your code here
+        // Hash user address and amount
+    }
+    
+    // Update Merkle root (admin only)
+    function updateMerkleRoot(bytes32 newRoot) external {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "claim",
+                "args": [1000, ["0x1234...", "0x5678..."]],
+                "expected": "success",
+                "description": "Claim with valid proof"
+            }
+        ],
+        "hints": [
+            "Leaf = keccak256(abi.encodePacked(address, amount))",
+            "Proof verification: hash up the tree to root",
+            "Sort hashes before hashing pairs for deterministic tree",
+            "Gas cost: ~30k per claim regardless of tree size"
+        ],
+        "tags": ["cryptography", "merkle-tree", "airdrop", "gas-optimization"],
+        "solved_count": 0
+    },
+    {
+        "problem_id": "crypto_009",
+        "title": "Ring Signature Mixer",
+        "description": """Implement a privacy-preserving token mixer using ring signatures.
+
+Requirements:
+- Deposit tokens anonymously
+- Withdraw to different address
+- Use ring signatures for unlinkability
+- Support multiple denomination pools
+- Prevent double-spending""",
+        "difficulty": "middle",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract RingMixer {
+    IERC20 public token;
+    uint256 public denomination = 1000e18; // Fixed deposit amount
+    
+    mapping(bytes32 => bool) public nullifiers;
+    mapping(bytes32 => bool) public commitments;
+    
+    bytes32[] public merkleTree;
+    uint256 public nextIndex;
+    
+    event Deposit(bytes32 indexed commitment, uint256 leafIndex);
+    event Withdrawal(address indexed to, bytes32 nullifier);
+    
+    constructor(address _token) {
+        token = IERC20(_token);
+    }
+    
+    // TODO: Implement deposit
+    function deposit(bytes32 commitment) external {
+        // Your code here
+        // 1. Transfer tokens from user
+        // 2. Add commitment to Merkle tree
+        // 3. Store commitment
+    }
+    
+    // TODO: Implement withdraw
+    function withdraw(
+        address recipient,
+        bytes32 nullifier,
+        bytes32 root,
+        bytes32[] calldata proof,
+        uint256[8] calldata ringSignature
+    ) external {
+        // Your code here
+        // 1. Verify nullifier not used
+        // 2. Verify Merkle proof
+        // 3. Verify ring signature
+        // 4. Mark nullifier as used
+        // 5. Transfer tokens to recipient
+    }
+    
+    // TODO: Implement verifyRingSignature
+    function verifyRingSignature(
+        bytes32 message,
+        uint256[8] calldata signature,
+        bytes32[] calldata publicKeys
+    ) internal pure returns (bool) {
+        // Your code here
+        // Ring signature verification
+    }
+    
+    // TODO: Implement calculateMerkleRoot
+    function calculateMerkleRoot(
+        bytes32 leaf,
+        uint256 index,
+        bytes32[] calldata proof
+    ) internal pure returns (bytes32) {
+        // Your code here
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "transaction",
+                "function": "deposit",
+                "args": ["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"],
+                "expected": "success",
+                "description": "Anonymous deposit"
+            }
+        ],
+        "hints": [
+            "Commitment = hash(secret, nullifier)",
+            "Nullifier prevents double-spending",
+            "Ring signature proves membership without revealing which member",
+            "Use Linkable Spontaneous Anonymous Group (LSAG) signatures",
+            "Merkle tree tracks all deposits"
+        ],
+        "tags": ["cryptography", "privacy", "ring-signature", "mixer"],
+        "solved_count": 0
+    },
+
+    # Expert Level
+    {
+        "problem_id": "crypto_010",
+        "title": "Zero-Knowledge Proof Verifier",
+        "description": """Implement a zk-SNARK verifier for private transactions.
+
+Requirements:
+- Verify zk-SNARK proofs on-chain
+- Support Groth16 verification
+- Verify statement without revealing witness
+- Efficient pairing checks
+- Support multiple circuits""",
+        "difficulty": "expert",
+        "category": "cryptography",
+        "initial_code": """// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+library Pairing {
+    struct G1Point {
+        uint256 X;
+        uint256 Y;
+    }
+    
+    struct G2Point {
+        uint256[2] X;
+        uint256[2] Y;
+    }
+    
+    // TODO: Implement pairing check
+    function pairing(G1Point[] memory p1, G2Point[] memory p2) internal view returns (bool) {
+        // Your code here
+        // Use precompiled contract for bn256 pairing
+    }
+}
+
+contract ZKVerifier {
+    using Pairing for *;
+    
+    struct VerifyingKey {
+        Pairing.G1Point alpha;
+        Pairing.G2Point beta;
+        Pairing.G2Point gamma;
+        Pairing.G2Point delta;
+        Pairing.G1Point[] gammaABC;
+    }
+    
+    struct Proof {
+        Pairing.G1Point a;
+        Pairing.G2Point b;
+        Pairing.G1Point c;
+    }
+    
+    VerifyingKey verifyingKey;
+    
+    // TODO: Implement verify
+    function verify(
+        uint256[] memory input,
+        Proof memory proof
+    ) public view returns (bool) {
+        // Your code here
+        // Groth16 verification:
+        // e(A, B) = e(alpha, beta) * e(vk_x, gamma) * e(C, delta)
+    }
+    
+    // TODO: Implement verifyingKeyHash
+    function verifyingKeyHash() public view returns (bytes32) {
+        // Your code here
+    }
+}
+
+contract PrivateTransfer {
+    ZKVerifier public verifier;
+    
+    mapping(bytes32 => bool) public nullifiers;
+    mapping(bytes32 => bool) public commitments;
+    
+    event Deposit(bytes32 indexed commitment);
+    event Withdrawal(bytes32 indexed nullifier);
+    
+    // TODO: Implement deposit
+    function deposit(bytes32 commitment) external payable {
+        // Your code here
+    }
+    
+    // TODO: Implement withdraw
+    function withdraw(
+        bytes32 nullifier,
+        bytes32 root,
+        address recipient,
+        uint256[8] calldata proof
+    ) external {
+        // Your code here
+        // 1. Verify proof
+        // 2. Check nullifier not used
+        // 3. Transfer funds
+    }
+}""",
+        "test_cases": [
+            {
+                "type": "call",
+                "function": "verify",
+                "args": [[1, 2, 3], "proof_data"],
+                "expected": "true",
+                "description": "Verify valid zk-SNARK proof"
+            }
+        ],
+        "hints": [
+            "Use precompiled contract at address 0x08 for pairing",
+            "Groth16: 3 pairings for verification",
+            "vk_x = sum of gammaABC[i] * input[i]",
+            "Efficient: verify in ~250k gas",
+            "Use libraries like snarkjs for proof generation"
+        ],
+        "tags": ["cryptography", "zero-knowledge", "zk-snark", "privacy", "expert"],
+        "solved_count": 0
+    },
 ]
 
 def get_problems():
