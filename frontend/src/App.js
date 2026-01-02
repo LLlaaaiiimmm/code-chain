@@ -17,6 +17,7 @@ import Pricing from "./pages/Pricing";
 import Certificates from "./pages/Certificates";
 import Achievements from "./pages/Achievements";
 import Analytics from "./pages/Analytics";
+import Skills from "./pages/Skills";
 import LeaderboardAdvanced from "./pages/LeaderboardAdvanced";
 import UserComparison from "./pages/UserComparison";
 import ProblemAnalytics from "./pages/ProblemAnalytics";
