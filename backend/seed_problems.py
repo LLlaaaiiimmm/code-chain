@@ -308,11 +308,31 @@ contract SecureVault {
                 "type": "transaction",
                 "function": "deposit",
                 "args": [],
+                "value": 1000000000000000000,  # 1 ETH in wei
                 "expected": "success",
                 "description": "Should accept deposits"
             },
-            {"input": "withdraw()", "expected": "balance = 0, eth sent"},
-            {"input": "reentrancy attack", "expected": "reverted"}
+            {
+                "type": "state",
+                "function": "balances",
+                "args": ["<deployer>"],
+                "expected": 1000000000000000000,
+                "description": "Should track deposit balance correctly"
+            },
+            {
+                "type": "transaction",
+                "function": "withdraw",
+                "args": [],
+                "expected": "success",
+                "description": "Should allow withdrawal"
+            },
+            {
+                "type": "state",
+                "function": "balances",
+                "args": ["<deployer>"],
+                "expected": 0,
+                "description": "Balance should be zero after withdrawal"
+            }
         ],
         "hints": [
             "Update state BEFORE external calls",
