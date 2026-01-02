@@ -61,6 +61,8 @@ class CodeValidator:
             return await self._validate_solidity(code, problem)
         elif category == "rust":
             return await self._validate_rust(code, problem)
+        elif category == "move":
+            return await self._validate_move(code, problem)
         elif category == "func":
             return await self._validate_func(code, problem)
         elif category == "cryptography":
