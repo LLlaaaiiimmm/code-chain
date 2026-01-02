@@ -760,6 +760,243 @@ class CodeChainTester:
         except Exception as e:
             await self.log_result("Rank Progress Calculation", False, f"Error testing progress calculation: {str(e)}")
             return False
+
+    async def test_delete_solved_submissions(self):
+        """Test DELETE /api/submissions/solved endpoint - delete all solved tasks functionality"""
+        if not self.test_user_token:
+            await self.log_result("Delete Solved Submissions", False, "Missing test user token")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        
+        try:
+            # Step 1: Get initial user stats from dashboard
+            dashboard_response = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
+            if dashboard_response.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, "Failed to get initial dashboard stats")
+                return False
+            
+            initial_stats = dashboard_response.json()
+            initial_elo = initial_stats.get("elo_rating", 1200)
+            initial_problems_solved = initial_stats.get("problems_solved", 0)
+            
+            await self.log_result("Delete Solved Submissions - Initial Stats", True, "Got initial user stats", {
+                "initial_elo": initial_elo,
+                "initial_problems_solved": initial_problems_solved
+            })
+            
+            # Step 2: Check if user has solved problems, if not create some
+            submissions_response = await self.client.get(f"{API_BASE}/submissions", headers=headers)
+            if submissions_response.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, "Failed to get user submissions")
+                return False
+            
+            submissions = submissions_response.json()
+            solved_submissions = [sub for sub in submissions if sub.get("status") == "passed"]
+            
+            # If no solved problems, create some by solving problems
+            if len(solved_submissions) == 0:
+                await self.log_result("Delete Solved Submissions - Setup", True, "No solved problems found, creating some...")
+                
+                # Get available problems
+                problems_response = await self.client.get(f"{API_BASE}/problems")
+                if problems_response.status_code != 200:
+                    await self.log_result("Delete Solved Submissions", False, "Failed to get problems for setup")
+                    return False
+                
+                problems = problems_response.json().get("problems", [])
+                if len(problems) < 2:
+                    await self.log_result("Delete Solved Submissions", False, "Not enough problems available for testing")
+                    return False
+                
+                # Submit solutions to first 2 problems
+                valid_code = """
+                // SPDX-License-Identifier: MIT
+                pragma solidity ^0.8.0;
+                
+                contract Solution {
+                    string public greeting = "Hello, CodeChain!";
+                    uint256 public totalSupply = 0;
+                    mapping(address => uint256) public balanceOf;
+                    
+                    function setGreeting(string memory _greeting) public {
+                        greeting = _greeting;
+                    }
+                    
+                    function getGreeting() public view returns (string memory) {
+                        return greeting;
+                    }
+                    
+                    function mint(uint256 amount) public {
+                        totalSupply += amount;
+                        balanceOf[msg.sender] += amount;
+                    }
+                }
+                """
+                
+                for i in range(min(2, len(problems))):
+                    problem = problems[i]
+                    submit_response = await self.client.post(f"{API_BASE}/submissions", 
+                        headers=headers,
+                        json={
+                            "problem_id": problem["problem_id"],
+                            "code": valid_code,
+                            "language": "solidity"
+                        }
+                    )
+                    
+                    if submit_response.status_code == 200:
+                        submission_data = submit_response.json()
+                        if submission_data.get("status") == "passed":
+                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", True, f"Successfully solved problem: {problem['title']}", {
+                                "problem_id": problem["problem_id"],
+                                "elo_change": submission_data.get("elo_change", 0)
+                            })
+                        else:
+                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", False, f"Problem solution failed: {submission_data.get('status')}")
+                    else:
+                        # Check if already solved
+                        if submit_response.status_code == 400 and "already solved" in submit_response.json().get("detail", "").lower():
+                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", True, f"Problem already solved: {problem['title']}")
+                        else:
+                            await self.log_result(f"Delete Solved Submissions - Setup Problem {i+1}", False, f"Failed to submit solution: {submit_response.status_code}")
+            
+            # Step 3: Get updated stats after solving problems
+            dashboard_response_after = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
+            if dashboard_response_after.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, "Failed to get updated dashboard stats")
+                return False
+            
+            updated_stats = dashboard_response_after.json()
+            updated_elo = updated_stats.get("elo_rating", 1200)
+            updated_problems_solved = updated_stats.get("problems_solved", 0)
+            
+            await self.log_result("Delete Solved Submissions - Updated Stats", True, "Got updated user stats after solving", {
+                "updated_elo": updated_elo,
+                "updated_problems_solved": updated_problems_solved,
+                "elo_gained": updated_elo - initial_elo,
+                "problems_gained": updated_problems_solved - initial_problems_solved
+            })
+            
+            # Ensure we have solved problems to delete
+            if updated_problems_solved == 0:
+                await self.log_result("Delete Solved Submissions", False, "No solved problems available for deletion test")
+                return False
+            
+            # Step 4: Call DELETE /api/submissions/solved
+            delete_response = await self.client.delete(f"{API_BASE}/submissions/solved", headers=headers)
+            
+            if delete_response.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, f"Delete endpoint failed: {delete_response.status_code}")
+                return False
+            
+            delete_data = delete_response.json()
+            deleted_count = delete_data.get("deleted_count", 0)
+            elo_reverted = delete_data.get("elo_reverted", 0)
+            problems_reverted = delete_data.get("problems_reverted", 0)
+            
+            await self.log_result("Delete Solved Submissions - Delete Response", True, "Delete endpoint returned correct data", {
+                "deleted_count": deleted_count,
+                "elo_reverted": elo_reverted,
+                "problems_reverted": problems_reverted,
+                "affected_problems": delete_data.get("affected_problems", 0)
+            })
+            
+            # Step 5: Verify dashboard stats were reverted
+            dashboard_response_final = await self.client.get(f"{API_BASE}/stats/dashboard", headers=headers)
+            if dashboard_response_final.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, "Failed to get final dashboard stats")
+                return False
+            
+            final_stats = dashboard_response_final.json()
+            final_elo = final_stats.get("elo_rating", 1200)
+            final_problems_solved = final_stats.get("problems_solved", 0)
+            
+            # Check if stats were properly reverted
+            expected_final_elo = updated_elo - elo_reverted
+            expected_final_problems = updated_problems_solved - problems_reverted
+            
+            if final_elo != expected_final_elo:
+                await self.log_result("Delete Solved Submissions - ELO Revert", False, f"ELO not properly reverted: expected {expected_final_elo}, got {final_elo}")
+                return False
+            
+            if final_problems_solved != expected_final_problems:
+                await self.log_result("Delete Solved Submissions - Problems Revert", False, f"Problems count not properly reverted: expected {expected_final_problems}, got {final_problems_solved}")
+                return False
+            
+            await self.log_result("Delete Solved Submissions - Stats Reverted", True, "User stats correctly reverted", {
+                "final_elo": final_elo,
+                "final_problems_solved": final_problems_solved,
+                "elo_reverted": elo_reverted,
+                "problems_reverted": problems_reverted
+            })
+            
+            # Step 6: Verify no solved submissions remain
+            submissions_response_final = await self.client.get(f"{API_BASE}/submissions", headers=headers)
+            if submissions_response_final.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, "Failed to get final submissions")
+                return False
+            
+            final_submissions = submissions_response_final.json()
+            remaining_solved = [sub for sub in final_submissions if sub.get("status") == "passed"]
+            
+            if len(remaining_solved) > 0:
+                await self.log_result("Delete Solved Submissions - Submissions Cleared", False, f"Still have {len(remaining_solved)} solved submissions remaining")
+                return False
+            
+            await self.log_result("Delete Solved Submissions - Submissions Cleared", True, "All solved submissions successfully deleted")
+            
+            # Step 7: Test repeated delete call (should return 0 deleted)
+            repeat_delete_response = await self.client.delete(f"{API_BASE}/submissions/solved", headers=headers)
+            
+            if repeat_delete_response.status_code != 200:
+                await self.log_result("Delete Solved Submissions", False, f"Repeat delete failed: {repeat_delete_response.status_code}")
+                return False
+            
+            repeat_delete_data = repeat_delete_response.json()
+            repeat_deleted_count = repeat_delete_data.get("deleted_count", -1)
+            
+            if repeat_deleted_count != 0:
+                await self.log_result("Delete Solved Submissions - Repeat Delete", False, f"Repeat delete should return 0, got {repeat_deleted_count}")
+                return False
+            
+            await self.log_result("Delete Solved Submissions - Repeat Delete", True, "Repeat delete correctly returns 0", {
+                "deleted_count": repeat_deleted_count,
+                "message": repeat_delete_data.get("message", "")
+            })
+            
+            # Step 8: Verify user can solve problems again
+            if len(problems) > 0:
+                first_problem = problems[0]
+                re_solve_response = await self.client.post(f"{API_BASE}/submissions", 
+                    headers=headers,
+                    json={
+                        "problem_id": first_problem["problem_id"],
+                        "code": valid_code,
+                        "language": "solidity"
+                    }
+                )
+                
+                if re_solve_response.status_code == 200:
+                    re_solve_data = re_solve_response.json()
+                    if re_solve_data.get("status") == "passed":
+                        await self.log_result("Delete Solved Submissions - Re-solve", True, "User can solve problems again after deletion", {
+                            "problem_id": first_problem["problem_id"],
+                            "new_elo_change": re_solve_data.get("elo_change", 0)
+                        })
+                    else:
+                        await self.log_result("Delete Solved Submissions - Re-solve", False, f"Re-solve failed: {re_solve_data.get('status')}")
+                        return False
+                else:
+                    await self.log_result("Delete Solved Submissions - Re-solve", False, f"Re-solve request failed: {re_solve_response.status_code}")
+                    return False
+            
+            await self.log_result("Delete Solved Submissions", True, "All delete solved submissions tests passed successfully")
+            return True
+            
+        except Exception as e:
+            await self.log_result("Delete Solved Submissions", False, f"Error testing delete solved submissions: {str(e)}")
+            return False
     
     async def test_authentication_endpoints(self):
         """Test authentication endpoints"""
