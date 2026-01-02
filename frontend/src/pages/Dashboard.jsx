@@ -465,6 +465,11 @@ const Dashboard = ({ user, token, onLogout }) => {
             <RecommendedProblems token={token} />
           </div>
 
+          {/* Skill Chain Preview */}
+          <div className="mb-8">
+            <SkillChainPreview token={token} />
+          </div>
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Recent Activity */}
             <Card className="lg:col-span-2 bg-card border-border">
