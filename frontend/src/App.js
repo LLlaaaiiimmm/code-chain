@@ -194,6 +194,12 @@ const AppRouter = ({ user, loading, login, logout, token }) => {
         </ProtectedRoute>
       } />
       
+      <Route path="/skills" element={
+        <ProtectedRoute user={user} loading={loading}>
+          <Skills user={user} token={token} />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/analytics" element={
         <ProtectedRoute user={user} loading={loading}>
           <Analytics user={user} token={token} />
