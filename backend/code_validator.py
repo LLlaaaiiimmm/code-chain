@@ -1086,8 +1086,8 @@ class CodeValidator:
                     value = value_match.group(1)
                     # Code should NOT have hardcoded return of this specific value
                     hardcode_patterns = [
-                        rf'return\s+{value}\s*[;}]',
-                        rf'value:\s*{value}\s*[,}]',
+                        rf'return\s+{re.escape(value)}\s*[;}}]',
+                        rf'value:\s*{re.escape(value)}\s*[,}}]',
                     ]
                     for hardcode_pattern in hardcode_patterns:
                         if re.search(hardcode_pattern, code) and int(value) > 10:
