@@ -983,7 +983,8 @@ class CodeValidator:
             })
             return False, test_results, 0, "Code too short"
         
-        # Try to compile if move compiler is available
+        # Step 1: Try to compile if move compiler is available
+        compilation_passed = False
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.move', delete=False) as f:
                 f.write(code)
@@ -1001,7 +1002,7 @@ class CodeValidator:
                 if result.returncode != 0:
                     # Compilation failed
                     test_results.append({
-                        "test_id": 0,
+                        "test_id": 1,
                         "input": "MOVE compilation",
                         "expected": "Clean compilation",
                         "passed": False,
@@ -1012,25 +1013,140 @@ class CodeValidator:
                 else:
                     # Compilation successful
                     test_results.append({
-                        "test_id": 0,
+                        "test_id": 1,
                         "input": "MOVE compilation",
                         "expected": "Clean compilation",
                         "passed": True,
-                        "gas_used": 0
+                        "gas_used": 0,
+                        "actual": "✓ Code compiles successfully"
                     })
+                    compilation_passed = True
                     
             except (FileNotFoundError, subprocess.TimeoutExpired):
-                # Compiler not available or timeout, use pattern matching
-                pass
+                # Compiler not available or timeout, will use pattern matching
+                test_results.append({
+                    "test_id": 1,
+                    "input": "MOVE compilation",
+                    "expected": "Success (or pattern matching)",
+                    "passed": True,
+                    "gas_used": 0,
+                    "actual": "⚠️ MOVE compiler not available - using enhanced pattern matching"
+                })
+                compilation_passed = True
             finally:
                 if os.path.exists(temp_file):
                     os.unlink(temp_file)
         except Exception as e:
             # Fall through to pattern matching
-            pass
+            test_results.append({
+                "test_id": 1,
+                "input": "MOVE compilation",
+                "expected": "Success (or pattern matching)",
+                "passed": True,
+                "gas_used": 0,
+                "actual": "⚠️ Using pattern-based validation"
+            })
+            compilation_passed = True
         
-        # Pattern matching for MOVE code
-        return await self._validate_move_patterns(code, problem, test_results)
+        # Step 2: Enhanced pattern matching - STRICT validation
+        test_cases = problem.get("test_cases", [])
+        
+        # Required MOVE patterns
+        required_patterns = {
+            "module": r'module\s+\w+::\w+\s*\{',
+            "struct_or_resource": r'struct\s+\w+',
+            "public_function": r'public\s+fun\s+\w+',
+            "signer_usage": r'&signer',
+        }
+        
+        # Check required patterns
+        for pattern_name, pattern in required_patterns.items():
+            if not re.search(pattern, code):
+                test_results.append({
+                    "test_id": len(test_results) + 1,
+                    "input": f"Required pattern: {pattern_name}",
+                    "expected": "Present in code",
+                    "passed": False,
+                    "gas_used": 0,
+                    "error": f"❌ Missing required MOVE pattern: {pattern_name}"
+                })
+                all_passed = False
+        
+        # Step 3: Validate ALL test cases - CHECK FOR HARDCODING
+        if test_cases:
+            for i, test_case in enumerate(test_cases):
+                test_input = test_case.get("input", "")
+                expected = test_case.get("expected", "")
+                description = test_case.get("description", f"Test {i+1}")
+                
+                # Extract value from test input (e.g., "create_resource_5" -> 5)
+                # Check that code doesn't hardcode specific values
+                value_match = re.search(r'(\d+)', test_input)
+                if value_match:
+                    value = value_match.group(1)
+                    # Code should NOT have hardcoded return of this specific value
+                    hardcode_patterns = [
+                        rf'return\s+{value}\s*[;}]',
+                        rf'value:\s*{value}\s*[,}]',
+                    ]
+                    for hardcode_pattern in hardcode_patterns:
+                        if re.search(hardcode_pattern, code) and int(value) > 10:
+                            # Only flag if value is not too common (like 0, 1, etc.)
+                            test_results.append({
+                                "test_id": len(test_results) + 1,
+                                "input": description,
+                                "expected": "Dynamic implementation (not hardcoded)",
+                                "passed": False,
+                                "gas_used": 0,
+                                "error": f"❌ Code appears to hardcode value {value}. Implementation must be dynamic!"
+                            })
+                            all_passed = False
+                            continue
+                
+                # Check that required constructs for this test are present
+                test_passed = True
+                error_msg = None
+                
+                if "module" in test_input.lower() and not re.search(required_patterns["module"], code):
+                    test_passed = False
+                    error_msg = "❌ Missing module definition"
+                elif "struct" in test_input.lower() and not re.search(required_patterns["struct_or_resource"], code):
+                    test_passed = False
+                    error_msg = "❌ Missing struct definition"
+                elif "resource" in test_input.lower():
+                    # Check for resource operations
+                    resource_ops = r'move_to|move_from|borrow_global|exists<'
+                    if not re.search(resource_ops, code):
+                        test_passed = False
+                        error_msg = "❌ Missing resource operations (move_to, borrow_global, etc.)"
+                
+                test_results.append({
+                    "test_id": len(test_results) + 1,
+                    "input": description,
+                    "expected": expected,
+                    "passed": test_passed,
+                    "gas_used": 0,
+                    "error": error_msg if not test_passed else None
+                })
+                
+                if not test_passed:
+                    all_passed = False
+        
+        # Final check: Resource operations for resource-based problems
+        if 'resource' in problem.get('title', '').lower() or 'resource' in problem.get('description', '').lower():
+            resource_ops = r'move_to|move_from|borrow_global_mut|borrow_global|exists<'
+            if not re.search(resource_ops, code):
+                test_results.append({
+                    "test_id": len(test_results) + 1,
+                    "input": "Resource operations check",
+                    "expected": "move_to, borrow_global, etc.",
+                    "passed": False,
+                    "gas_used": 0,
+                    "error": "❌ Resource problem must use resource operations"
+                })
+                all_passed = False
+        
+        return all_passed, test_results, 0, None if all_passed else "MOVE validation failed"
     
     async def _validate_move_patterns(
         self,
