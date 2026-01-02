@@ -494,18 +494,22 @@ Each test creates resource with DIFFERENT value - no hardcoding!""",
     }}
     
     public fun create_resource(account: &signer, val: u64) {{
-        let resource = ResourceData {{ value: val }};
-        move_to(account, resource);
+        // TODO: Create and store the resource
+        // Hint: Use move_to to store the resource in the account
+        // Your code here
     }}
     
     public fun get_value(addr: address): u64 acquires ResourceData {{
-        let resource = borrow_global<ResourceData>(addr);
-        resource.value
+        // TODO: Return the value from the resource
+        // Hint: Use borrow_global to access the resource
+        // Your code here
+        0
     }}
     
     public fun update_value(account: &signer, new_val: u64) acquires ResourceData {{
-        let resource = borrow_global_mut<ResourceData>(signer::address_of(account));
-        resource.value = new_val;
+        // TODO: Update the resource value
+        // Hint: Use borrow_global_mut to get mutable access
+        // Your code here
     }}
 }}""",
         "test_cases": gen_move_tests(15),
