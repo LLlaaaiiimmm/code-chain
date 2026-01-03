@@ -72,51 +72,6 @@ export const AuthContext = ({ children }) => {
   return children({ user, loading, login, logout, token, checkAuth });
 };
 
-// Auth Callback for Google OAuth
-// REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-const AuthCallback = ({ onLogin }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const hasProcessed = useRef(false);
-
-  useEffect(() => {
-    if (hasProcessed.current) return;
-    hasProcessed.current = true;
-
-    const processSession = async () => {
-      const hash = location.hash;
-      const sessionId = new URLSearchParams(hash.replace('#', '?')).get('session_id');
-      
-      if (sessionId) {
-        try {
-          const response = await axios.get(`${API}/auth/session`, {
-            headers: { "X-Session-ID": sessionId },
-            withCredentials: true
-          });
-          onLogin(response.data);
-          navigate("/dashboard", { replace: true, state: { user: response.data } });
-        } catch (error) {
-          console.error("Auth error:", error);
-          navigate("/login", { replace: true });
-        }
-      } else {
-        navigate("/login", { replace: true });
-      }
-    };
-
-    processSession();
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Authenticating...</p>
-      </div>
-    </div>
-  );
-};
-
 // Protected Route
 const ProtectedRoute = ({ children, user, loading }) => {
   const location = useLocation();
@@ -138,13 +93,6 @@ const ProtectedRoute = ({ children, user, loading }) => {
 
 // App Router
 const AppRouter = ({ user, loading, login, logout, token }) => {
-  const location = useLocation();
-
-  // Check for session_id in URL hash (Google OAuth callback)
-  if (location.hash?.includes('session_id=')) {
-    return <AuthCallback onLogin={login} />;
-  }
-
   return (
     <Routes>
       <Route path="/" element={<Landing user={user} />} />
