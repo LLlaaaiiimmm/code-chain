@@ -7,8 +7,9 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { toast } from "sonner";
-import { Boxes, Mail, Lock, Loader2 } from "lucide-react";
+import { Boxes, Mail, Lock, Loader2, Wallet } from "lucide-react";
 import { API } from "../App";
+import { ethers } from "ethers";
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
