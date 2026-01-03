@@ -98,3 +98,5 @@ hexbytes
 py-ecc
 sortedcontainers
 parsimonious>=0.10.0,<0.11.0
+httpx
+eth-account
