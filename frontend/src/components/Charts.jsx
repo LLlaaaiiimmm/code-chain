@@ -59,8 +59,11 @@ export const ProblemDistributionChart = ({ data = {} }) => {
           contentStyle={{ 
             backgroundColor: '#18181b', 
             border: '1px solid #3f3f46',
-            borderRadius: '6px'
+            borderRadius: '6px',
+            color: '#ffffff'
           }}
+          labelStyle={{ color: '#ffffff' }}
+          itemStyle={{ color: '#ffffff' }}
         />
         <Bar dataKey="value" radius={[4, 4, 0, 0]} />
       </BarChart>
