@@ -14,6 +14,7 @@ import { ethers } from "ethers";
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [metamaskLoading, setMetamaskLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -35,10 +36,49 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  const handleGoogleLogin = () => {
-    const redirectUrl = window.location.origin + '/dashboard';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  const handleMetaMaskLogin = async () => {
+    setMetamaskLoading(true);
+
+    try {
+      // Check if MetaMask is installed
+      if (!window.ethereum) {
+        toast.error("Please install MetaMask to use this feature");
+        setMetamaskLoading(false);
+        return;
+      }
+
+      // Request account access
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const walletAddress = accounts[0];
+
+      // Create message to sign
+      const message = `Sign this message to authenticate with CodeChain.\n\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
+
+      // Request signature
+      const signer = await provider.getSigner();
+      const signature = await signer.signMessage(message);
+
+      // Send to backend
+      const response = await axios.post(`${API}/auth/metamask`, {
+        wallet_address: walletAddress,
+        signature: signature,
+        message: message
+      });
+
+      onLogin(response.data.user, response.data.token);
+      toast.success("Connected with MetaMask!");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("MetaMask auth error:", error);
+      if (error.code === 4001) {
+        toast.error("MetaMask connection rejected");
+      } else {
+        toast.error(error.response?.data?.detail || "MetaMask authentication failed");
+      }
+    } finally {
+      setMetamaskLoading(false);
+    }
   };
 
   return (
