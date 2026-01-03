@@ -14,6 +14,8 @@ import bcrypt
 import jwt
 import httpx
 from code_validator import code_validator
+from eth_account.messages import encode_defunct
+from eth_account import Account
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
