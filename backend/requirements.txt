@@ -101,3 +101,6 @@ parsimonious>=0.10.0,<0.11.0
 httpx
 eth-account
 web3
+eth-tester
+py-evm
+py-solc-x
