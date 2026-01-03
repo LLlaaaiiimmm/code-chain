@@ -899,6 +899,55 @@ async def login(credentials: UserLogin):
     
     return {"token": token, "user": user}
 
+@api_router.post("/auth/metamask")
+async def metamask_auth(auth_data: MetaMaskAuth):
+    try:
+        # Verify signature
+        message = encode_defunct(text=auth_data.message)
+        recovered_address = Account.recover_message(message, signature=auth_data.signature)
+        
+        # Check if recovered address matches provided wallet address
+        if recovered_address.lower() != auth_data.wallet_address.lower():
+            raise HTTPException(status_code=401, detail="Invalid signature")
+        
+        # Check if user with this wallet exists
+        existing = await db.users.find_one({"wallet_address": auth_data.wallet_address.lower()}, {"_id": 0})
+        
+        if existing:
+            # User exists - login
+            user_id = existing["user_id"]
+            token = create_jwt_token(user_id)
+            existing.pop("password_hash", None)
+            return {"token": token, "user": existing}
+        else:
+            # New user - register
+            if not auth_data.name:
+                raise HTTPException(status_code=400, detail="Name required for registration")
+            
+            user_id = f"user_{uuid.uuid4().hex[:12]}"
+            user_doc = {
+                "user_id": user_id,
+                "email": f"{auth_data.wallet_address[:8]}@metamask.local",  # Pseudo email
+                "name": auth_data.name,
+                "wallet_address": auth_data.wallet_address.lower(),
+                "picture": None,
+                "elo_rating": 1200,
+                "problems_solved": 0,
+                "subscription": "basic",
+                "achievements": [],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(user_doc)
+            
+            token = create_jwt_token(user_id)
+            user_doc.pop("_id", None)
+            
+            return {"token": token, "user": user_doc}
+            
+    except Exception as e:
+        logger.error(f"MetaMask auth error: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"MetaMask authentication failed: {str(e)}")
+
 # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 @api_router.get("/auth/session")
 async def get_session(request: Request, response: Response):
