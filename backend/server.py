@@ -45,6 +45,12 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class MetaMaskAuth(BaseModel):
+    wallet_address: str
+    signature: str
+    message: str
+    name: Optional[str] = None
+
 class UserResponse(BaseModel):
     user_id: str
     email: str
