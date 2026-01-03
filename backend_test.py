@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 
 # Backend URL from frontend/.env
-BACKEND_URL = "https://compile-helper-5.preview.emergentagent.com/api"
+BACKEND_URL = "https://data-view-update.preview.emergentagent.com/api"
 
 class SkillChainTester:
     def __init__(self):
