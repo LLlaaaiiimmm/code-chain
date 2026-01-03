@@ -16,7 +16,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 load_dotenv('/app/frontend/.env')
 load_dotenv('/app/backend/.env')
 
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://deploy-now-40.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://crypto-signup.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 DB_NAME = os.environ.get('DB_NAME', 'codechain')
